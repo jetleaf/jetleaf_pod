@@ -55,6 +55,19 @@ class MockPodDefinitionRegistry implements PodDefinitionRegistry {
   }
 
   @override
+  PodDefinition getDefinitionByClass(Class type) {
+    for (final definition in _definitions.values) {
+      final defType = definition.type;
+
+      if (defType == type || defType.isSubclassOf(type) || type.isAssignableFrom(defType)) {
+        return definition;
+      }
+    }
+
+    throw Exception('Pod not found');
+  }
+
+  @override
   Future<bool> isNameInUse(String name) async => _definitions.containsKey(name);
 }
 

@@ -9,7 +9,7 @@
 //
 // For licensing terms, see the LICENSE file in the root of this project.
 // ---------------------------------------------------------------------------
-// 
+//
 // 🔧 Powered by Hapnium — the Dart backend engine 🍃
 
 import 'dart:async';
@@ -30,7 +30,6 @@ import '../helpers/object.dart';
 import '../helpers/utils.dart';
 import '../lifecycle/disposable_lifecycle_manager.dart';
 import '../lifecycle/lifecycle.dart';
-import '../lifecycle/pod_processor_cache_manager.dart';
 import '../lifecycle/pod_processors.dart';
 import '../scope/_scope.dart';
 import '../scope/scope.dart';
@@ -42,21 +41,21 @@ import 'pod_factory.dart';
 /// {@template abstract_pod_factory}
 /// Abstract base implementation of [PodFactory] that provides core functionality
 /// for pod creation, management, and lifecycle handling in the Jetleaf framework.
-/// 
+///
 /// This class serves as the foundation for concrete pod factories, implementing
 /// the core algorithm for pod retrieval, scope management, dependency resolution,
 /// and lifecycle callbacks. It handles singleton caching, prototype creation,
 /// circular dependency detection, and PodProvider unwrapping.
-/// 
+///
 /// Key Features:
 /// - Hierarchical pod provider support with parent-child relationships
 /// - Singleton and prototype scope management
 /// - Custom scope registration and handling
-/// - Pod post-processing with [PodAwareProcessor]
+/// - Pod post-processing with [PodProcessor]
 /// - Expression resolution for dynamic value injection
 /// - Lifecycle management with destruction callbacks
 /// - Circular dependency detection and prevention
-/// 
+///
 /// Usage Example:
 /// ```dart
 /// class MyPodFactory extends AbstractPodFactory {
@@ -64,66 +63,118 @@ import 'pod_factory.dart';
 ///   PodDefinition getDefinition(String name) {
 ///     // Implementation to return pod definition by name
 ///   }
-///   
+///
 ///   @override
 ///   FutureOr<Object> doCreate(String name, RootPodDefinition definition, List<ArgumentValue>? args) {
 ///     // Implementation to create pod instance
 ///   }
 /// }
-/// 
+///
 /// final factory = MyPodFactory();
 /// final pod = await factory.getPod<MyService>('myService');
 /// ```
-/// 
+///
 /// See also:
 /// - [PodFactory] for the main interface
 /// - [ConfigurablePodFactory] for configuration methods
 /// - [PodScope] for scope implementations
 /// {@endtemplate}
-abstract class AbstractPodFactory extends AbstractPodProviderFactory implements ConfigurablePodFactory {
+abstract class AbstractPodFactory extends AbstractPodProviderFactory
+    implements ConfigurablePodFactory {
   /// Constant used to denote the startup step for pod instantiation in the abstract pod provider.
   static const String STARTUP_STEP_INSTANTIATE_POD = 'jetleaf*pod*instantiate';
 
-  /// Logger for this class
+  /// Logger instance for tracking pod factory operations, errors, and diagnostic information.
   final Log _logger = LogFactory.getLog(AbstractPodFactory);
 
-  /// Parent pod provider for hierarchical lookups
+  /// Parent pod factory for hierarchical pod lookup and dependency resolution.
   PodFactory? _parentPodFactory;
-  
-  /// Conversion service for type conversion
+
+  /// Service for converting configuration values and dependency types during pod creation.
   late ConversionService _conversionService;
 
-  /// Pod post processor cache
-  PodProcessorCacheManager? _processorCacheManager;
+  /// Registry of processors that intercept pod instantiation for custom logic execution.
+  ///
+  /// These processors are invoked before and after pod instantiation, allowing for
+  /// custom initialization, dependency injection modifications, or instantiation
+  /// short-circuiting.
+  final Set<PodInstantiationProcessor> _instantiationPodProcessors = {};
 
-  /// Expression resolver for PodExpression evaluation
+  /// Registry of processors that handle pod destruction lifecycle events.
+  ///
+  /// These processors are invoked before pod destruction, enabling custom cleanup
+  /// logic, resource release, or finalization operations.
+  final Set<PodDestructionProcessor> _destructionPodProcessors = {};
+
+  /// Registry of processors that handle pod initialization lifecycle events.
+  ///
+  /// These processors are invoked during the pod initialization process, allowing for
+  /// custom initialization logic, validation, or enhancement of pod instances.
+  final Set<PodInitializationProcessor> _initializationPodProcessors = {};
+
+  /// Registry of processors that handle smart pod instantiation.
+  ///
+  /// These processors can modify or enhance the instantiation process, allowing for
+  /// advanced instantiation scenarios, such as conditional instantiation or
+  /// parameterized pod creation.
+  final Set<PodSmartInstantiationProcessor> _smartInstantiationPodProcessors = {};
+
+  /// General registry of all pod-aware processors for comprehensive lifecycle management.
+  ///
+  /// This includes processors that handle various pod lifecycle events beyond
+  /// just instantiation and destruction.
+  final Set<PodProcessor> _podProcessors = {};
+
+  /// Resolver for evaluating dynamic expressions in pod definitions and configuration.
   PodExpressionResolver? _expressionResolver;
 
-  /// Whether to cache pod metadata
+  /// Controls whether pod metadata should be cached for performance optimization.
+  ///
+  /// When enabled, pod definitions and related metadata are cached to avoid
+  /// repeated computation during pod lookup and creation.
   bool _cacheMetadata = true;
 
-  /// Disposable pod adapter class
+  /// Class reference for managing disposable pod lifecycles and resource cleanup.
   Class<DisposableLifecycleManager> _DISPOSABLE_CLASS = Class<DisposableLifecycleManager>(null, PackageNames.CORE);
 
-  /// Names of prototypes currently in creation (for circular dependency detection)
+  /// Thread-local storage for tracking prototype pods currently being created.
+  ///
+  /// Used to detect and prevent circular dependencies during prototype pod
+  /// instantiation by maintaining creation context per thread.
   final LocalThread<Object> _prototypesCurrentlyInCreation = LocalThread<Object>();
-  
-  /// Registered scopes
+
+  /// Map of registered pod scopes available for pod lifecycle management.
+  ///
+  /// Contains both built-in scopes (singleton, prototype) and any custom
+  /// scopes registered via [registerScope].
   final Map<String, PodScope> _scopes = {};
-  
-  /// Merged pod definitions cache
+
+  /// Cache of merged pod definitions for efficient pod definition resolution.
+  ///
+  /// Stores the result of merging parent and child pod definitions to avoid
+  /// repeated merging operations during pod creation.
   final Map<String, RootPodDefinition> _mergedPodDefinitions = {};
 
-  /// Names of pods that have already been created at least once.
+  /// Set tracking which pods have been created at least once for lifecycle management.
+  ///
+  /// Used to optimize repeated pod access and manage initialization state
+  /// for singleton pods.
   final Set<String> _alreadyCreated = {};
 
-  /// Application startup
+  /// Component for coordinating pod instantiation during application startup sequence.
   late ApplicationStartup _applicationStartup;
 
   /// {@macro abstract_pod_factory}
+  /// Creates a new abstract pod factory with optional parent factory for hierarchical resolution.
+  ///
+  /// Parameters:
+  /// - [parent]: Optional parent pod factory for hierarchical pod lookup
+  ///
+  /// Initializes default scopes, expression resolver, conversion service, and application startup.
+  /// Registers built-in singleton and prototype scopes automatically.
   AbstractPodFactory([PodFactory? parent]) {
     _parentPodFactory = parent;
-    
+
     // Register default scopes
     _scopes[ScopeType.SINGLETON.name.toLowerCase()] = SingletonScope();
     _scopes[ScopeType.PROTOTYPE.name.toLowerCase()] = PrototypeScope();
@@ -140,11 +191,13 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
   @override
   void setParentFactory(PodFactory? parent) {
     if (this == parent) {
-			throw IllegalStateException("Cannot set parent pod provider to self");
-		}
+      throw IllegalStateException("Cannot set parent pod provider to self");
+    }
 
     if (_parentPodFactory != null && _parentPodFactory != parent) {
-      throw IllegalStateException('Parent provider already set and not equal to new parent');
+      throw IllegalStateException(
+        'Parent provider already set and not equal to new parent',
+      );
     }
 
     _parentPodFactory = parent;
@@ -172,17 +225,17 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
   @override
   void registerScope(String scopeName, PodScope scope) {
     if (ScopeType.SINGLETON.name.equalsIgnoreCase(scopeName) || ScopeType.PROTOTYPE.name.equalsIgnoreCase(scopeName)) {
-			throw IllegalArgumentException("Cannot replace existing scopes 'singleton' and 'prototype'");
-		}
+      throw IllegalArgumentException("Cannot replace existing scopes 'singleton' and 'prototype'");
+    }
 
-		PodScope? previous = _scopes.get(scopeName.toLowerCase());
-		if (previous != null && previous != scope) {
-			if (logger.getIsDebugEnabled()) {
-				logger.debug("Replacing scope '$scopeName' from [$previous] to [$scope]");
-			}
-		} else if (logger.getIsTraceEnabled()) {
-			logger.trace("Registering scope '$scopeName' with implementation [$scope]");
-		}
+    PodScope? previous = _scopes.get(scopeName.toLowerCase());
+    if (previous != null && previous != scope) {
+      if (logger.getIsDebugEnabled()) {
+        logger.debug("Replacing scope '$scopeName' from [$previous] to [$scope]");
+      }
+    } else if (logger.getIsTraceEnabled()) {
+      logger.trace("Registering scope '$scopeName' with implementation [$scope]");
+    }
 
     _scopes[scopeName.toLowerCase()] = scope;
   }
@@ -206,13 +259,17 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
     setCachePodMetadata(other.isCachePodMetadata());
     setConversionService(other.getConversionService());
     setPodExpressionResolver(other.getPodExpressionResolver());
-    
+
     if (other is AbstractPodFactory) {
       _applicationStartup = other._applicationStartup;
       _DISPOSABLE_CLASS = other._DISPOSABLE_CLASS;
       _parentPodFactory = other._parentPodFactory;
       _scopes.addAll(other._scopes);
-      _processorCacheManager = other._processorCacheManager;
+      _instantiationPodProcessors.addAll(other._instantiationPodProcessors);
+      _destructionPodProcessors.addAll(other._destructionPodProcessors);
+      _podProcessors.addAll(other._podProcessors);
+      _initializationPodProcessors.addAll(other._initializationPodProcessors);
+      _smartInstantiationPodProcessors.addAll(other._smartInstantiationPodProcessors);
     } else {
       final scopeNames = other.getRegisteredScopeNames();
       for (String scopeName in scopeNames) {
@@ -222,69 +279,271 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
   }
 
   @override
-  void addPodAwareProcessor(PodAwareProcessor processor) {
-    synchronized(getPodProcessorCacheManager(), () {
-      getPodProcessorCacheManager().remove(processor); // Remove if already present
-      getPodProcessorCacheManager().add(processor);
-    });
+  void addPodProcessor(PodProcessor processor) {
+    if (logger.getIsTraceEnabled()) {
+      logger.trace("Adding pod aware processor ${processor.runtimeType} to ${runtimeType}");
+    }
+
+    _removePodProcessor(processor);
+    _addPodProcessor(processor);
   }
 
   @override
-  List<PodAwareProcessor> getPodAwareProcessors() {
-    List<PodAwareProcessor> result = [];
+  List<PodProcessor> getPodProcessors() => _podProcessors.toList();
 
-    synchronized(getPodProcessorCacheManager(), () {
-      result.addAll(getPodProcessorCacheManager().instantiation);
-      result.addAll(getPodProcessorCacheManager().destruction);
-      result.addAll(getPodProcessorCacheManager().processors);
+  /// Adds a pod-aware processor to the factory with thread-safe synchronization.
+  ///
+  /// This method registers a processor and categorizes it based on its specific
+  /// interfaces to enable optimized invocation during different pod lifecycle phases.
+  /// Processors are automatically categorized into:
+  ///
+  /// - **PodDestructionProcessor**: For pod destruction lifecycle events
+  /// - **PodInstantiationProcessor**: For pod instantiation lifecycle events
+  /// - **General PodProcessor**: For all pod lifecycle events
+  ///
+  /// **Thread Safety:**
+  /// The operation is synchronized on the processor instance to prevent
+  /// concurrent modification issues during processor registration.
+  ///
+  /// **Parameters:**
+  /// - `processor`: The pod-aware processor to add
+  ///
+  /// **Example:**
+  /// ```dart
+  /// factory._addPodProcessor(MyCustomProcessor());
+  /// // Processor is now registered and categorized for appropriate lifecycle events
+  /// ```
+  void _addPodProcessor(PodProcessor processor) {
+    return synchronized(processor, () {
+      if (processor is PodDestructionProcessor) {
+        _destructionPodProcessors.add(processor);
+      }
 
-      // Remove duplicates
-      result = result.toSet().toList();
+      if (processor is PodInstantiationProcessor) {
+        _instantiationPodProcessors.add(processor);
+
+        if (processor is PodSmartInstantiationProcessor) {
+          _smartInstantiationPodProcessors.add(processor);
+        }
+      }
+
+      if (processor is PodInitializationProcessor) {
+        _initializationPodProcessors.add(processor);
+      }
+
+      _podProcessors.add(processor);
     });
-
-    return result;
   }
 
+  /// Removes a pod-aware processor from the factory with thread-safe synchronization.
+  ///
+  /// This method unregisters a processor and removes it from all relevant
+  /// processor categories. It ensures the processor will no longer receive
+  /// notifications for pod lifecycle events.
+  ///
+  /// **Thread Safety:**
+  /// The operation is synchronized on the processor instance to prevent
+  /// concurrent modification issues during processor removal.
+  ///
+  /// **Parameters:**
+  /// - `processor`: The pod-aware processor to remove
+  ///
+  /// **Example:**
+  /// ```dart
+  /// factory._removePodProcessor(oldProcessor);
+  /// // Processor is now unregistered from all lifecycle events
+  /// ```
+  void _removePodProcessor(PodProcessor processor) {
+    return synchronized(processor, () {
+      _podProcessors.remove(processor);
+
+      if (processor is PodDestructionProcessor) {
+        _destructionPodProcessors.remove(processor);
+      }
+
+      if (processor is PodInstantiationProcessor) {
+        _instantiationPodProcessors.remove(processor);
+
+        if (processor is PodSmartInstantiationProcessor) {
+          _smartInstantiationPodProcessors.remove(processor);
+        }
+      }
+
+      if (processor is PodInitializationProcessor) {
+        _initializationPodProcessors.remove(processor);
+      }
+    });
+  }
+
+  /// Returns a copy of all registered destruction-aware pod processors.
+  ///
+  /// This method provides safe access to the destruction-aware processors
+  /// list by returning a defensive copy to prevent external modification.
+  ///
+  /// **Returns:**
+  /// - A list of [PodDestructionProcessor] instances
+  ///
+  /// **Example:**
+  /// ```dart
+  /// final processors = factory.getPodDestructionProcessors();
+  /// for (final processor in processors) {
+  ///   await processor.postProcessBeforeDestruction(pod, podName);
+  /// }
+  /// ```
+  @protected
+  List<PodDestructionProcessor> getPodDestructionProcessors() => _destructionPodProcessors.toList();
+
+  /// Returns a copy of all registered instantiation-aware pod processors.
+  ///
+  /// This method provides safe access to the instantiation-aware processors
+  /// list by returning a defensive copy to prevent external modification.
+  ///
+  /// **Returns:**
+  /// - A list of [PodInstantiationProcessor] instances
+  ///
+  /// **Example:**
+  /// ```dart
+  /// final processors = factory.getPodInstantiationProcessors();
+  /// for (final processor in processors) {
+  ///   final result = processor.postProcessBeforeInstantiation(podClass, podName);
+  ///   if (result != null) return result; // Short-circuit instantiation
+  /// }
+  /// ```
+  @protected
+  List<PodInstantiationProcessor> getPodInstantiationProcessors() => _instantiationPodProcessors.toList();
+
+  /// Returns a copy of all registered initialization-aware pod processors.
+  ///
+  /// This method provides safe access to the initialization-aware processors
+  /// list by returning a defensive copy to prevent external modification.
+  ///
+  /// **Returns:**
+  /// - A list of [PodInitializationProcessor] instances
+  ///
+  /// **Example:**
+  /// ```dart
+  /// final processors = factory.getPodInitializationProcessors();
+  /// for (final processor in processors) {
+  ///   await processor.postProcessBeforeInitialization(pod, podName);
+  /// }
+  /// ```
+  @protected
+  List<PodInitializationProcessor> getPodInitializationProcessors() => _initializationPodProcessors.toList();
+
+  /// Returns a copy of all registered smart instantiation-aware pod processors.
+  ///
+  /// This method provides safe access to the smart instantiation-aware processors
+  /// list by returning a defensive copy to prevent external modification.
+  ///
+  /// **Returns:**
+  /// - A list of [PodSmartInstantiationProcessor] instances
+  ///
+  /// **Example:**
+  /// ```dart
+  /// final processors = factory.getPodSmartInstantiationProcessors();
+  /// for (final processor in processors) {
+  ///   await processor.postProcessBeforeSmartInstantiation(podClass, podName);
+  /// }
+  /// ```
+  @protected
+  List<PodSmartInstantiationProcessor> getPodSmartInstantiationProcessors() => _smartInstantiationPodProcessors.toList();
+
+  /// {@template abstract_pod_factory_has_instantiation_pod_post_processors}
+  /// Returns true if there are any instantiation pod post-processors registered.
+  ///
+  /// This method checks if the pod processor cache contains any post-processors
+  /// that are intended to be applied during pod instantiation.
+  ///
+  /// Returns true if there are any instantiation post-processors, false otherwise.
+  /// {@endtemplate}
+  @protected
+  bool hasPodInstantiationProcessors() => _instantiationPodProcessors.isNotEmpty;
+
+  /// {@template abstract_pod_factory_has_destruction_pod_post_processors}
+  /// Returns true if there are any destruction pod post-processors registered.
+  ///
+  /// This method checks if the pod processor cache contains any post-processors
+  /// that are intended to be applied during pod destruction.
+  ///
+  /// Returns true if there are any destruction post-processors, false otherwise.
+  /// {@endtemplate}
+  @protected
+  bool hasPodDestructionProcessors() => _destructionPodProcessors.isNotEmpty;
+
+  /// {@template abstract_pod_factory_has_smart_instantiation_pod_post_processors}
+  /// Returns true if there are any smart instantiation pod post-processors registered.
+  ///
+  /// This method checks if the pod processor cache contains any post-processors
+  /// that are intended to be applied during pod smart instantiation.
+  ///
+  /// Returns true if there are any smart instantiation post-processors, false otherwise.
+  /// {@endtemplate}
+  @protected
+  bool hasPodSmartInstantiationProcessors() => _smartInstantiationPodProcessors.isNotEmpty;
+
+  /// {@template abstract_pod_factory_has_initialization_pod_post_processors}
+  /// Returns true if there are any initialization pod post-processors registered.
+  ///
+  /// This method checks if the pod processor cache contains any post-processors
+  /// that are intended to be applied during pod initialization.
+  ///
+  /// Returns true if there are any initialization post-processors, false otherwise.
+  /// {@endtemplate}
+  @protected
+  bool hasPodInitializationProcessors() => _initializationPodProcessors.isNotEmpty;
+
+  /// {@template abstract_pod_factory_has_pod_post_processors}
+  /// Returns true if there are any pod post-processors registered.
+  ///
+  /// This method checks if the pod processor cache contains any post-processors
+  /// that are intended to be applied during pod lifecycle management.
+  ///
+  /// Returns true if there are any pod post-processors, false otherwise.
+  /// {@endtemplate}
+  @protected
+  bool hasPodProcessors() => hasPodDestructionProcessors() || hasPodInstantiationProcessors() || _podProcessors.isNotEmpty;
+
   @override
-  int getPodAwareProcessorCount() => getPodAwareProcessors().length;
+  int getPodProcessorCount() => getPodProcessors().length;
 
   @override
   List<String> getAliases(String name) {
     String transformed = transformedPodName(name);
-		List<String> aliases = [];
+    List<String> aliases = [];
 
-		bool hasFactoryPrefix = (name.isNotEmpty && name.first() == PodUtils.POD_PROVIDER_PREFIX);
-		String fullname = transformed;
+    bool hasFactoryPrefix = (name.isNotEmpty && name.first() == PodUtils.POD_PROVIDER_PREFIX);
+    String fullname = transformed;
 
-		if (hasFactoryPrefix) {
-			fullname = podProviderName(transformed);
-		}
+    if (hasFactoryPrefix) {
+      fullname = podProviderName(transformed);
+    }
 
-		if (fullname.notEquals(name)) {
-			aliases.add(fullname);
-		}
+    if (fullname.notEquals(name)) {
+      aliases.add(fullname);
+    }
 
-		final retrievedAliases = super.getAliases(transformed);
-		String prefix = (hasFactoryPrefix ? PodUtils.POD_PROVIDER_PREFIX : "");
-		for (String retrievedAlias in retrievedAliases) {
-			String alias = prefix + retrievedAlias;
-			if (!alias.equals(name)) {
-				aliases.add(alias);
-			}
-		}
+    final retrievedAliases = super.getAliases(transformed);
+    String prefix = hasFactoryPrefix ? PodUtils.POD_PROVIDER_PREFIX : "";
+    for (String retrievedAlias in retrievedAliases) {
+      String alias = prefix + retrievedAlias;
+      if (!alias.equals(name)) {
+        aliases.add(alias);
+      }
+    }
 
-		if (!containsSingleton(transformed) && !containsDefinition(transformed)) {
-			final parent = getParentFactory();
-			if (parent != null) {
-				aliases.addAll(parent.getAliases(fullname));
-			}
-		}
+    if (!containsSingleton(transformed) && !containsDefinition(transformed)) {
+      final parent = getParentFactory();
+      if (parent != null) {
+        aliases.addAll(parent.getAliases(fullname));
+      }
+    }
 
-		return aliases;
+    return aliases;
   }
 
   @override
-  bool isActuallyInCreation(String name) => isCurrentlyCreatingSingleton(name) || isCurrentlyCreatingPrototype(name);
+  bool isActuallyInCreation(String name) =>
+      isCurrentlyCreatingSingleton(name) || isCurrentlyCreatingPrototype(name);
 
   @override
   Future<bool> containsLocalPod(String name) async {
@@ -297,11 +556,11 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
 
   @override
   Future<bool> isPodProvider(String name, [RootPodDefinition? rpd]) async {
-    if(rpd != null) {
+    if (rpd != null) {
       return rpd.isPodProvider || rpd.type.isAssignableFrom(POD_PROVIDER_CLASS);
     }
 
-		String transformed = transformedPodName(name);
+    String transformed = transformedPodName(name);
     if (containsDefinition(name)) {
       final def = getDefinition(name);
       return def.isPodProvider || def.type.isAssignableFrom(POD_PROVIDER_CLASS);
@@ -312,20 +571,20 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
       return instance is PodProvider;
     }
 
-		// No singleton instance found -> check pod definition.
+    // No singleton instance found -> check pod definition.
     final parent = getParentFactory();
-		if (!containsDefinition(transformed) && parent is ConfigurablePodFactory) {
-			// No pod definition found in this provider -> delegate to parent.
-			return parent.isPodProvider(transformed);
-		}
+    if (!containsDefinition(transformed) && parent is ConfigurablePodFactory) {
+      // No pod definition found in this provider -> delegate to parent.
+      return parent.isPodProvider(transformed);
+    }
 
-		return await isPodProvider(transformed, getLocalMergedPodDefinition(transformed));
-	}
+    return await isPodProvider(transformed, getLocalMergedPodDefinition(transformed));
+  }
 
   @override
   RootPodDefinition getMergedPodDefinition(String name) {
     final transformed = transformedPodName(name);
-    
+
     // Efficiently check whether pod definition exists in this provider.
     final parent = getParentFactory();
     if (parent is ConfigurablePodFactory && !containsDefinition(transformed)) {
@@ -339,8 +598,8 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
 
       final podDefinition = getDefinition(transformed);
       final definition = RootPodDefinition.from(podDefinition);
-      
-      if(isCachePodMetadata() || isPodEligibleForMetadataCaching(transformed)) {
+
+      if (isCachePodMetadata() || isPodEligibleForMetadataCaching(transformed)) {
         cacheMergedPodDefinition(definition, transformed);
       }
 
@@ -354,26 +613,26 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
   Future<void> destroyPod(String name, Object pod) async => _destroy(name, pod, getLocalMergedPodDefinition(name));
 
   void _destroy(String name, Object pod, RootPodDefinition root) async {
-    await DisposableLifecycleManager(pod, name, root, getPodProcessorCacheManager().destruction.toList()).onDestroy();
+    await DisposableLifecycleManager(pod, name, root, getPodDestructionProcessors()).onDestroy();
   }
 
   @override
   void destroyScopedPod(String name) {
     RootPodDefinition root = getLocalMergedPodDefinition(name);
-		if (root.scope.isSingleton || root.scope.isPrototype) {
-			throw new IllegalArgumentException("Pod name '$name' does not correspond to an object in a mutable scope");
-		}
+    if (root.scope.isSingleton || root.scope.isPrototype) {
+      throw new IllegalArgumentException("Pod name '$name' does not correspond to an object in a mutable scope");
+    }
 
-		String scopeName = root.scope.type;
-		PodScope? scope = _scopes.get(scopeName);
-		if (scope == null) {
-			throw new IllegalStateException("No Scope SPI registered for scope name '$scopeName'");
-		}
+    String scopeName = root.scope.type;
+    PodScope? scope = _scopes.get(scopeName);
+    if (scope == null) {
+      throw new IllegalStateException("No Scope SPI registered for scope name '$scopeName'");
+    }
 
-		Object? pod = scope.remove(name);
-		if (pod != null) {
-			_destroy(name, pod, root);
-		}
+    Object? pod = scope.remove(name);
+    if (pod != null) {
+      _destroy(name, pod, root);
+    }
   }
 
   @override
@@ -381,8 +640,8 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
     final transformed = transformedPodName(name);
 
     if (containsSingleton(transformed) || containsDefinition(transformed)) {
-			return (!PodUtils.isFactoryDereference(name) || await isPodProvider(transformed));
-		}
+      return !PodUtils.isFactoryDereference(name) || await isPodProvider(transformed);
+    }
 
     final parent = getParentFactory();
     return parent?.containsPod(PodUtils.originalName(name)) ?? false;
@@ -447,7 +706,7 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
 
       // 1.b) Instance is not a provider
       if (isFactoryDereference) {
-        // Caller explicitly asked for factory reference (e.g. "&beanName") but the cached instance is the bean itself,
+        // Caller explicitly asked for factory reference (e.g. "&podName") but the cached instance is the pod itself,
         // so the factory reference semantics don't match.
         return false;
       }
@@ -550,31 +809,31 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
   @override
   Future<bool> isSingleton(String name) async {
     final transformed = transformedPodName(name);
-    
+
     final singleton = await super.getSingleton(transformed, allowEarlyReference: false);
     if (singleton != null) {
       if (singleton is PodProvider) {
-				return (PodUtils.isFactoryDereference(name) || singleton.isSingleton());
-			} else {
-				return !PodUtils.isFactoryDereference(name);
-			}
+        return PodUtils.isFactoryDereference(name) || singleton.isSingleton();
+      } else {
+        return !PodUtils.isFactoryDereference(name);
+      }
     }
 
     // No singleton instance found -> check pod definition.
-		final parent = getParentFactory();
-		if(parent != null && !containsDefinition(transformed)) {
-			// No pod definition found in this provider -> delegate to parent.
-			return parent.isSingleton(PodUtils.originalName(name));
-		}
+    final parent = getParentFactory();
+    if (parent != null && !containsDefinition(transformed)) {
+      // No pod definition found in this provider -> delegate to parent.
+      return parent.isSingleton(PodUtils.originalName(name));
+    }
 
     final merged = getLocalMergedPodDefinition(transformed);
-    
+
     // In case of PodProvider, return singleton status of created object if not a dereference.
-		if (merged.scope.isSingleton) {
-			if (await isPodProvider(transformed, merged)) {
-				if (PodUtils.isFactoryDereference(name)) {
-					return true;
-				}
+    if (merged.scope.isSingleton) {
+      if (await isPodProvider(transformed, merged)) {
+        if (PodUtils.isFactoryDereference(name)) {
+          return true;
+        }
 
         final res = await getPod(podProviderName(transformed));
         if (res is PodProvider) {
@@ -582,46 +841,46 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
         }
 
         return false;
-			} else {
-				return !PodUtils.isFactoryDereference(name);
-			}
-		} else {
-			return false;
-		}
+      } else {
+        return !PodUtils.isFactoryDereference(name);
+      }
+    } else {
+      return false;
+    }
   }
 
   @override
   Future<bool> isPrototype(String name) async {
     final transformed = transformedPodName(name);
-    
+
     final parent = getParentFactory();
-		if (parent != null && !containsDefinition(transformed)) {
-			// No pod definition found in this provider -> delegate to parent.
-			return parent.isPrototype(PodUtils.originalName(name));
-		}
+    if (parent != null && !containsDefinition(transformed)) {
+      // No pod definition found in this provider -> delegate to parent.
+      return parent.isPrototype(PodUtils.originalName(name));
+    }
 
-		final merged = getLocalMergedPodDefinition(transformed);
-		if (merged.scope.isPrototype) {
-			// In case of PodProvider, return singleton status of created object if not a dereference.
-			return (!PodUtils.isFactoryDereference(name) || await isPodProvider(transformed, merged));
-		}
+    final merged = getLocalMergedPodDefinition(transformed);
+    if (merged.scope.isPrototype) {
+      // In case of PodProvider, return singleton status of created object if not a dereference.
+      return (!PodUtils.isFactoryDereference(name) || await isPodProvider(transformed, merged));
+    }
 
-		// Singleton or scoped - not a prototype.
-		// However, PodProvider may still produce a prototype object...
-		if (PodUtils.isFactoryDereference(name)) {
-			return false;
-		}
+    // Singleton or scoped - not a prototype.
+    // However, PodProvider may still produce a prototype object...
+    if (PodUtils.isFactoryDereference(name)) {
+      return false;
+    }
 
-		if (await isPodProvider(transformed, merged)) {
-			final pp = await getPod(podProviderName(transformed));
+    if (await isPodProvider(transformed, merged)) {
+      final pp = await getPod(podProviderName(transformed));
       if (pp is PodProvider) {
         return pp.isPrototype() || !pp.isSingleton();
       }
 
-			return false;
-		} else {
-			return false;
-		}
+      return false;
+    } else {
+      return false;
+    }
   }
 
   @override
@@ -660,31 +919,19 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
   // PROTECTED METHODS
   // -----------------------------------------------------------------------------------------------------
 
-  /// {@template abstract_pod_factory_get_pod_processor_cache_manager}
-  /// Returns the pod processor cache manager, creating it if necessary.
-  /// 
-  /// This manager caches pod post-processors for efficient access during
-  /// pod creation and destruction lifecycle events.
-  /// 
-  /// Returns the [PodProcessorCacheManager] instance
-  /// {@endtemplate}
-  @protected
-  PodProcessorCacheManager getPodProcessorCacheManager() {
-    _processorCacheManager ??= PodProcessorCacheManager([], _processorCacheManager);
-    return _processorCacheManager!;
-  }
-
   /// {@template abstract_pod_factory_reset_pod_processor_cache}
   /// Resets the pod processor cache, clearing all cached post-processors.
-  /// 
+  ///
   /// This method is used to invalidate the cache when pod post-processors
   /// are modified or when the pod factory is reconfigured.
-  /// 
+  ///
   /// {@endtemplate}
   @protected
   void resetPodProcessorCache() {
-    synchronized(getPodProcessorCacheManager(), () {
-      _processorCacheManager = null;
+    return synchronized(_podProcessors, () {
+      _podProcessors.clear();
+      _instantiationPodProcessors.clear();
+      _destructionPodProcessors.clear();
     });
   }
 
@@ -704,81 +951,48 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
     return null;
   }
 
-  /// {@template abstract_pod_factory_has_instantiation_pod_post_processors}
-  /// Returns true if there are any instantiation pod post-processors registered.
-  /// 
-  /// This method checks if the pod processor cache contains any post-processors
-  /// that are intended to be applied during pod instantiation.
-  /// 
-  /// Returns true if there are any instantiation post-processors, false otherwise.
-  /// {@endtemplate}
-  @protected
-  bool hasInstantiationPodPostProcessors() => getPodProcessorCacheManager().instantiation.isNotEmpty;
-
-  /// {@template abstract_pod_factory_has_destruction_pod_post_processors}
-  /// Returns true if there are any destruction pod post-processors registered.
-  /// 
-  /// This method checks if the pod processor cache contains any post-processors
-  /// that are intended to be applied during pod destruction.
-  /// 
-  /// Returns true if there are any destruction post-processors, false otherwise.
-  /// {@endtemplate}
-  @protected
-  bool hasDestructionPodPostProcessors() => getPodProcessorCacheManager().destruction.isNotEmpty;
-
-  /// {@template abstract_pod_factory_has_pod_post_processors}
-  /// Returns true if there are any pod post-processors registered.
-  /// 
-  /// This method checks if the pod processor cache contains any post-processors
-  /// that are intended to be applied during pod lifecycle management.
-  /// 
-  /// Returns true if there are any pod post-processors, false otherwise.
-  /// {@endtemplate}
-  @protected
-  bool hasPodPostProcessors() => getPodProcessorCacheManager().processors.isNotEmpty;
-
   /// {@template abstract_pod_factory_evaluate_expression}
   /// Evaluates a pod expression using the configured expression resolver.
-  /// 
+  ///
   /// This method is used to resolve dynamic values defined in pod expressions
   /// during pod creation and configuration.
-  /// 
+  ///
   /// Usage Example:
   /// ```dart
   /// final expression = PodExpression('${environment.variable}');
   /// final result = evaluateExpression(expression, podDefinition);
   /// ```
-  /// 
+  ///
   /// [value] the pod expression to evaluate
   /// [podDefinition] the pod definition context for evaluation
   /// Returns an [ObjectHolder] with the evaluated value, or `null` if no resolver is configured
   /// {@endtemplate}
   @protected
   FutureOr<ObjectHolder<Object>?> evaluateExpression(Object? value, PodDefinition? podDefinition) {
-		if (_expressionResolver == null) {
-			return null;
-		}
+    if (_expressionResolver == null) {
+      return null;
+    }
 
-		PodScope? scope = null;
-		if (podDefinition != null) {
-			String scopeName = podDefinition.scope.type;
-			scope = getRegisteredScope(scopeName);
-		}
+    PodScope? scope = null;
+    if (podDefinition != null) {
+      String scopeName = podDefinition.scope.type;
+      scope = getRegisteredScope(scopeName);
+    }
 
-		return _expressionResolver!.evaluate(value, PodExpressionContext(this, scope));
-	}
+    return _expressionResolver!.evaluate(value, PodExpressionContext(this, scope));
+  }
 
   /// {@template abstract_pod_factory_transformed_pod_name}
   /// Transforms a pod name by removing any prefix and suffix.
-  /// 
+  ///
   /// This method is used to normalize pod names by removing any prefix or suffix
   /// that may be added during pod registration or configuration.
-  /// 
+  ///
   /// Usage Example:
   /// ```dart
   /// final transformed = transformedPodName('myPod');
   /// ```
-  /// 
+  ///
   /// [name] the pod name to transform
   /// Returns the transformed pod name
   /// {@endtemplate}
@@ -787,28 +1001,28 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
 
   /// {@template abstract_pod_factory_original_pod_name}
   /// Returns the original pod name by removing any prefix and suffix.
-  /// 
+  ///
   /// This method is used to retrieve the original pod name from a transformed name
   /// by removing any prefix or suffix that may have been added during pod registration
   /// or configuration.
-  /// 
+  ///
   /// Usage Example:
   /// ```dart
   /// final original = originalPodName('myPod');
   /// ```
-  /// 
+  ///
   /// [name] the transformed pod name
   /// Returns the original pod name
   /// {@endtemplate}
   @protected
   String originalPodName(String name) {
-		String transformed = transformedPodName(name);
-		if (name.isNotEmpty && name.startsWith(PodUtils.POD_PROVIDER_PREFIX)) {
-			transformed = "${PodUtils.POD_PROVIDER_PREFIX}$transformed";
-		}
+    String transformed = transformedPodName(name);
+    if (name.isNotEmpty && name.startsWith(PodUtils.POD_PROVIDER_PREFIX)) {
+      transformed = podProviderName(transformed);
+    }
 
-		return transformed;
-	}
+    return transformed;
+  }
 
   /// Gets the name of a pod with the appended pod provider prefix.
   @protected
@@ -816,70 +1030,70 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
 
   /// {@template abstract_pod_factory_is_currently_creating_prototype}
   /// Checks if a prototype pod is currently being created.
-  /// 
+  ///
   /// This method is used for circular dependency detection during prototype creation.
-  /// 
+  ///
   /// [name] the name of the pod to check
   /// Returns `true` if the pod is currently being created, `false` otherwise
   /// {@endtemplate}
   @protected
   bool isCurrentlyCreatingPrototype(String name) {
-		Object? val = _prototypesCurrentlyInCreation.get();
-		return (val != null && (val.equals(name) || (val is Set && val.contains(name))));
-	}
+    Object? val = _prototypesCurrentlyInCreation.get();
+    return (val != null && (val.equals(name) || (val is Set && val.contains(name))));
+  }
 
   /// {@template abstract_pod_factory_before_prototype_creation}
   /// Marks a prototype pod as being created to detect circular dependencies.
-  /// 
+  ///
   /// This method should be called before starting the creation of a prototype pod.
-  /// 
+  ///
   /// [name] the name of the pod being created
   /// {@endtemplate}
   @protected
   void beforePrototypeCreation(String name) {
-		Object? val = _prototypesCurrentlyInCreation.get();
+    Object? val = _prototypesCurrentlyInCreation.get();
 
-		if (val == null) {
-			_prototypesCurrentlyInCreation.set(name);
-		} else if (val is String) {
-			Set<String> podNameSet = HashSet<String>();
+    if (val == null) {
+      _prototypesCurrentlyInCreation.set(name);
+    } else if (val is String) {
+      Set<String> podNameSet = HashSet<String>();
 
-			podNameSet.add(val);
-			podNameSet.add(name);
-			_prototypesCurrentlyInCreation.set(podNameSet);
-		} else {
-			Set<String> podNameSet = val as Set<String>;
-			podNameSet.add(name);
-		}
-	}
+      podNameSet.add(val);
+      podNameSet.add(name);
+      _prototypesCurrentlyInCreation.set(podNameSet);
+    } else {
+      Set<String> podNameSet = val as Set<String>;
+      podNameSet.add(name);
+    }
+  }
 
   /// {@template abstract_pod_factory_after_prototype_creation}
   /// Removes a prototype pod from the creation tracking after creation completes.
-  /// 
+  ///
   /// This method should be called after the creation of a prototype pod completes,
   /// whether successfully or with an error.
-  /// 
+  ///
   /// [name] the name of the pod that was created
   /// {@endtemplate}
   @protected
   void afterPrototypeCreation(String name) {
-		Object? val = _prototypesCurrentlyInCreation.get();
-		if (val is String) {
-			_prototypesCurrentlyInCreation.remove();
-		} else if (val is Set<String>) {
-			val.remove(name);
-			if (val.isEmpty) {
-				_prototypesCurrentlyInCreation.remove();
-			}
-		}
-	}
+    Object? val = _prototypesCurrentlyInCreation.get();
+    if (val is String) {
+      _prototypesCurrentlyInCreation.remove();
+    } else if (val is Set<String>) {
+      val.remove(name);
+      if (val.isEmpty) {
+        _prototypesCurrentlyInCreation.remove();
+      }
+    }
+  }
 
   /// {@template abstract_pod_factory_has_started_creating_pod}
   /// Checks if a pod has already been created.
-  /// 
+  ///
   /// This method is used to track whether a pod has already been created
   /// to prevent duplicate creation and circular dependencies.
-  /// 
+  ///
   /// Returns `true` if the pod has already been created, `false` otherwise
   /// {@endtemplate}
   @protected
@@ -887,99 +1101,99 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
 
   /// {@template abstract_pod_factory_cache_merged_pod_definition}
   /// Caches a merged pod definition for a given pod name.
-  /// 
+  ///
   /// This method is used to cache a merged pod definition for a given pod name
   /// to prevent duplicate merging and improve performance.
-  /// 
+  ///
   /// [root] the root pod definition to cache
   /// [name] the name of the pod to cache
   /// {@endtemplate}
   @protected
   void cacheMergedPodDefinition(RootPodDefinition root, String name) {
-		_mergedPodDefinitions[name] = RootPodDefinition.from(root);
-	}
+    _mergedPodDefinitions[name] = RootPodDefinition.from(root);
+  }
 
   /// {@template abstract_pod_factory_get_local_merged_pod_definition}
   /// Returns the locally cached merged pod definition if available and not stale.
-  /// 
+  ///
   /// This method provides efficient access to cached pod definitions while
   /// ensuring stale definitions are re-merged when necessary.
-  /// 
+  ///
   /// [name] the name of the pod to get the definition for
   /// Returns the cached [RootPodDefinition] or fetches a fresh one if needed
   /// {@endtemplate}
   @protected
   RootPodDefinition getLocalMergedPodDefinition(String name) {
     // Quick check on the map first, with minimal locking.
-		final root = _mergedPodDefinitions[name];
-		if (root != null && !root.getIsStale()) {
-			return root;
-		}
+    final root = _mergedPodDefinitions[name];
+    if (root != null && !root.getIsStale()) {
+      return root;
+    }
 
-		return getMergedPodDefinition(name);
+    return getMergedPodDefinition(name);
   }
 
   /// {@template abstract_pod_factory_check_merged_pod_definition}
   /// Checks the merged pod definition for a given pod name.
-  /// 
+  ///
   /// This method is used to validate the merged pod definition for a given pod name
   /// to ensure it is not abstract and to prevent duplicate merging.
-  /// 
+  ///
   /// [root] the root pod definition to check
   /// [name] the name of the pod to check
   /// [args] any additional arguments to pass to the check
   /// {@endtemplate}
   @protected
   void checkMergedPodDefinition(RootPodDefinition root, String name, Object? args) {
-		if (root.isAbstractAndNoFactory()) {
-			throw PodIsAbstractException("Merged pod definition is non-instantiable for $name", name: name);
-		}
-	}
+    if (root.isAbstractAndNoFactory()) {
+      throw PodIsAbstractException("Merged pod definition is non-instantiable for $name", name: name);
+    }
+  }
 
   /// {@template abstract_pod_factory_clear_merged_pod_definition}
   /// Clears the merged pod definition for a given pod name.
-  /// 
+  ///
   /// This method is used to clear the merged pod definition for a given pod name
   /// to prevent stale definitions from being used.
-  /// 
+  ///
   /// [name] the name of the pod to clear the definition for
   /// {@endtemplate}
   @protected
   void clearMergedPodDefinition(String name) {
-		final definition = _mergedPodDefinitions[name];
-		if (definition != null) {
-			definition.setIsStale(true);
-		}
-	}
+    final definition = _mergedPodDefinitions[name];
+    if (definition != null) {
+      definition.setIsStale(true);
+    }
+  }
 
   /// {@template abstract_pod_factory_mark_pod_as_created}
   /// Marks a pod as having been created at least once.
-  /// 
+  ///
   /// This method updates internal tracking to indicate that a pod has been
   /// instantiated, which affects metadata caching eligibility.
-  /// 
+  ///
   /// [name] the name of the pod that was created
   /// {@endtemplate}
   @protected
   void markPodAsCreated(String name) {
-		if (!_alreadyCreated.contains(name)) {
-			return synchronized(_mergedPodDefinitions, () {
-				if (!isPodEligibleForMetadataCaching(name)) {
-					// Let the pod definition get re-merged now that we're actually creating
-					// the pod... just in case some of its metadata changed in the meantime.
-					clearMergedPodDefinition(name);
-				}
-				_alreadyCreated.add(name);
-			});
-		}
-	}
+    if (!_alreadyCreated.contains(name)) {
+      return synchronized(_mergedPodDefinitions, () {
+        if (!isPodEligibleForMetadataCaching(name)) {
+          // Let the pod definition get re-merged now that we're actually creating
+          // the pod... just in case some of its metadata changed in the meantime.
+          clearMergedPodDefinition(name);
+        }
+        _alreadyCreated.add(name);
+      });
+    }
+  }
 
   /// {@template abstract_pod_factory_is_pod_eligible_for_metadata_caching}
   /// Checks if a pod is eligible for metadata caching.
-  /// 
+  ///
   /// This method determines whether a pod has been created at least once,
   /// which affects metadata caching eligibility.
-  /// 
+  ///
   /// [name] the name of the pod to check
   /// Returns `true` if the pod is eligible for metadata caching, `false` otherwise
   /// {@endtemplate}
@@ -988,44 +1202,44 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
 
   /// {@template abstract_pod_factory_cleanup_after_pod_creation_failure}
   /// Cleans up after a pod creation failure.
-  /// 
+  ///
   /// This method removes the pod from the already created set and ensures
   /// that any merged pod definitions are cleared.
-  /// 
+  ///
   /// [name] the name of the pod that failed to create
   /// {@endtemplate}
   @protected
   void cleanupAfterPodCreationFailure(String name) {
-		return synchronized((_mergedPodDefinitions), () {
-			_alreadyCreated.remove(name);
-		});
-	}
+    return synchronized((_mergedPodDefinitions), () {
+      _alreadyCreated.remove(name);
+    });
+  }
 
   /// {@template abstract_pod_factory_remove_singleton_if_created}
   /// Removes a singleton pod if it has been created.
-  /// 
+  ///
   /// This method checks if a singleton pod has been created and removes it
   /// from the singleton cache if it has.
-  /// 
+  ///
   /// [name] the name of the singleton pod to remove
   /// Returns `true` if the singleton pod was removed, `false` otherwise
   /// {@endtemplate}
   @protected
   bool removeSingletonIfCreated(String name) {
-		if (!_alreadyCreated.contains(name)) {
-			removeSingleton(name);
-			return true;
-		} else {
-			return false;
-		}
-	}
+    if (!_alreadyCreated.contains(name)) {
+      removeSingleton(name);
+      return true;
+    } else {
+      return false;
+    }
+  }
 
   /// {@template abstract_pod_factory_requires_destruction}
   /// Checks if a pod requires destruction.
-  /// 
+  ///
   /// This method determines whether a pod requires destruction based on its type
   /// and the presence of destruction pod post-processors.
-  /// 
+  ///
   /// [pod] the pod to check
   /// [root] the root pod definition to check
   /// Returns `true` if the pod requires destruction, `false` otherwise
@@ -1033,47 +1247,47 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
   @protected
   Future<bool> requiresDestruction(Object pod, RootPodDefinition root) async {
     bool notNullable = root.type != NullablePod;
-    bool hasProcessors = hasDestructionPodPostProcessors() && await DisposableLifecycleManager.hasApplicableProcessors(pod, root, getPodProcessorCacheManager().destruction);
+    bool hasProcessors = hasPodDestructionProcessors() && await DisposableLifecycleManager.hasApplicableProcessors(pod, root, _destructionPodProcessors);
 
-		return notNullable && (DisposableLifecycleManager.hasDestroyMethod(pod, root) || hasProcessors);
-	}
+    return notNullable && (DisposableLifecycleManager.hasDestroyMethod(pod, root) || hasProcessors);
+  }
 
   /// {@template abstract_pod_factory_register_disposable_handler}
   /// Registers a disposable handler for a pod that requires destruction callbacks.
-  /// 
+  ///
   /// This method sets up the appropriate destruction callback based on the pod's scope.
   /// For singleton pods, it registers a disposable pod. For scoped pods, it registers
   /// with the scope's destruction callback mechanism.
-  /// 
+  ///
   /// [name] the name of the pod
   /// [pod] the pod instance
   /// [root] the pod definition containing scope information
   /// {@endtemplate}
   @protected
   Future<void> registerDisposableHandler(String name, DisposablePod pod, RootPodDefinition root) async {
-		if (!root.scope.isPrototype && await requiresDestruction(pod, root)) {
-      final handler = DisposableLifecycleManager(pod, name, root, getPodProcessorCacheManager().destruction.toList());
+    if (!root.scope.isPrototype && await requiresDestruction(pod, root)) {
+      final handler = DisposableLifecycleManager(pod, name, root, _destructionPodProcessors.toList());
 
-			if (root.scope.isSingleton) {
-				// Register a DisposablePod implementation that performs all destruction
-				// work for the given pod: DestructionAwarePodPostProcessors,
-				// DisposablePod interface, custom destroy method.
-				registerDisposablePod(name, pod, root.type.getQualifiedName());
-			} else {
-				// A pod with a custom scope...
-				final scope = _scopes.get(root.scope.type);
-				if (scope == null) {
-					throw new IllegalStateException("No Scope registered for scope name '${root.scope.type}'");
-				}
+      if (root.scope.isSingleton) {
+        // Register a DisposablePod implementation that performs all destruction
+        // work for the given pod: DestructionAwarePodPostProcessors,
+        // DisposablePod interface, custom destroy method.
+        registerDisposablePod(name, pod, root.type.getQualifiedName());
+      } else {
+        // A pod with a custom scope...
+        final scope = _scopes.get(root.scope.type);
+        if (scope == null) {
+          throw new IllegalStateException("No Scope registered for scope name '${root.scope.type}'");
+        }
 
-				scope.registerDestructionCallback(name, handler);
-			}
-		}
-	}
+        scope.registerDestructionCallback(name, handler);
+      }
+    }
+  }
 
   /// {@template abstract_pod_factory_do_get}
   /// Main template method for pod retrieval that implements the core resolution algorithm.
-  /// 
+  ///
   /// This method is the heart of the pod factory system, handling:
   /// 1. Pod name transformation and alias resolution
   /// 2. Singleton cache lookup
@@ -1081,65 +1295,67 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
   /// 4. Dependency resolution and circular dependency detection
   /// 5. Scope-based pod creation (singleton, prototype, custom scopes)
   /// 6. PodProvider unwrapping and instance creation
-  /// 
+  ///
   /// Usage Example:
   /// ```dart
   /// final pod = await doGet('myService', Class.forObject(MyService), null);
   /// ```
-  /// 
+  ///
   /// [name] the name of the pod to retrieve
   /// [type] the expected type of the pod (optional)
   /// [args] constructor arguments for the pod (optional)
   /// Returns the retrieved pod instance
-  /// 
+  ///
   /// Throws [PodCurrentlyInCreationException] for circular dependencies
   /// Throws [PodCreationException] for pod creation failures
   /// {@endtemplate}
   @protected
   Future<Object> doGet(String name, Class<Object>? type, List<ArgumentValue>? args, [bool prototypeInSingleton = false]) async {
     Object instance;
-    
+
     final transformed = transformedPodName(name);
     ObjectHolder<Object>? cache = await getSingletonCache(transformed); // Check singleton cache first
     Object? shared = cache?.getValue();
 
     if (shared != null && args == null && cache != null) {
       if (_logger.getIsTraceEnabled()) {
-				if (isCurrentlyCreatingSingleton(transformed)) {
-					_logger.trace("Returning eagerly cached instance of singleton pod '$transformed' that is not fully initialized yet - a consequence of a circular reference");
-				} else {
-					_logger.trace("Returning cached instance of singleton pod '$transformed'");
-				}
-			}
+        if (isCurrentlyCreatingSingleton(transformed)) {
+          _logger.trace("Returning eagerly cached instance of singleton pod '$transformed' that is not fully initialized yet - a consequence of a circular reference");
+        } else {
+          _logger.trace("Returning cached instance of singleton pod '$transformed'");
+        }
+      }
 
       instance = await doGetObject(shared, type, name, transformed, null);
     } else {
       // Fail if we're already creating this pod instance: We're assumably within a circular reference.
-			if (isCurrentlyCreatingPrototype(transformed)) {
-				throw PodCurrentlyInCreationException(name: transformed);
-			}
+      if (isCurrentlyCreatingPrototype(transformed)) {
+        throw PodCurrentlyInCreationException(name: transformed);
+      }
 
       // Check if pod definition exists in this provider.
-			PodFactory? parent = getParentFactory();
+      PodFactory? parent = getParentFactory();
 
       if (parent != null && !containsDefinition(transformed)) {
-				String lookup = PodUtils.originalName(name); // Not found -> check parent.
+        String lookup = PodUtils.originalName(name); // Not found -> check parent.
 
-				if (parent is AbstractPodFactory) {
-					return await parent.doGet(lookup, type, args);
-				} else if (args != null) { // Delegation to parent with explicit args.
-					if (type == null) {
+        if (parent is AbstractPodFactory) {
+          return await parent.doGet(lookup, type, args);
+        } else if (args != null) {
+          // Delegation to parent with explicit args.
+          if (type == null) {
             return await parent.getPod(lookup, args);
           } else {
             return await parent.get(type, args);
           }
-				} else { // No args -> delegate to standard getPod method.
+        } else {
+          // No args -> delegate to standard getPod method.
           if (type != null) {
             return await parent.get(type);
           }
-					return await parent.getPod(lookup);
-				}
-			} else {
+          return await parent.getPod(lookup);
+        }
+      } else {
         markPodAsCreated(transformed);
 
         StartupStep createStep = _applicationStartup.start(STARTUP_STEP_INSTANTIATE_POD).tag("name", value: name);
@@ -1159,34 +1375,43 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
           if (dependsOn.isNotEmpty) {
             for (DependencyDesign dep in dependsOn) {
               final depName = dep.name;
-              if(depName == null) {
+              final depType = dep.type;
+
+              String? dependency;
+              if (depType != null) {
+                dependency = getDefinitionByClass(depType).name;
+              } else if (depName != null) {
+                dependency = depName;
+              }
+
+              if (dependency == null) {
                 continue;
               }
 
-              if (isDependent(transformed, depName)) {
+              if (isDependent(transformed, dependency)) {
                 throw PodCreationException.withResource(
                   merged.description,
                   transformed,
-                  "Circular depends-on relationship between '$transformed' and '$dep'"
+                  "Circular depends-on relationship between '$transformed' and '$dep'",
                 );
               }
 
-              registerDependentPod(depName, transformed);
+              registerDependentPod(dependency, transformed);
               try {
-                await doGet(depName, null, null, dep.prototypeInSingleton);
+                await doGet(dependency, null, null, dep.prototypeInSingleton);
               } on NoSuchPodDefinitionException catch (ex) {
                 throw PodCreationException.withResource(
                   merged.description,
                   transformed,
                   "$transformed depends on missing pod $dep",
-                  cause: ex
+                  cause: ex,
                 );
               } on PodCreationException catch (ex) {
                 throw PodCreationException.withResource(
                   merged.description,
                   transformed,
                   "Failed to initialize dependency '${(ex.getPodName() ?? "")}' of ${type.getSimpleName()} pod '$transformed'",
-                  cause: ex
+                  cause: ex,
                 );
               }
             }
@@ -1208,7 +1433,7 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
                 return ObjectHolder(
                   await doCreate(transformed, merged, args),
                   packageName: type?.getPackage()?.getName(),
-                  qualifiedName: type?.getQualifiedName()
+                  qualifiedName: type?.getQualifiedName(),
                 );
               } on PodException catch (_) {
                 // Explicitly remove instance from singleton cache: It might have been put there
@@ -1226,7 +1451,7 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
               throw PodCreationException.withResource(
                 merged.description,
                 transformed,
-                "Failed to create singleton pod '$transformed'"
+                "Failed to create singleton pod '$transformed'",
               );
             }
 
@@ -1260,7 +1485,7 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
                       return ObjectHolder(
                         await doCreate(transformed, merged, args),
                         packageName: type?.getPackage()?.getName(),
-                        qualifiedName: type?.getQualifiedName()
+                        qualifiedName: type?.getQualifiedName(),
                       );
                     } finally {
                       afterPrototypeCreation(transformed);
@@ -1296,18 +1521,18 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
 
   /// {@template abstract_pod_factory_internal_do_get}
   /// Internal method to handle PodProvider unwrapping and instance retrieval.
-  /// 
+  ///
   /// This method processes the retrieved pod instance, handling PodProvider
   /// unwrapping and ensuring the correct instance is returned based on the
   /// request type (provider pod vs produced pod).
-  /// 
+  ///
   /// [instance] the pod instance retrieved from cache or creation
   /// [type] the expected type of the pod
   /// [name] the original pod name
   /// [transformed] the transformed pod name
   /// [definition] the pod definition (optional)
   /// Returns the final pod instance to return
-  /// 
+  ///
   /// Throws [PodIsNotAProviderException] if a provider pod is expected but not found
   /// {@endtemplate}
   @protected
@@ -1322,28 +1547,28 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
     // If name starts with &, return the provider pod itself
     if (PodUtils.isFactoryDereference(name)) {
       if (object is NullablePod) {
-				throw PodCreationException.withResource(
-					definition?.description,
-					transformed,
-					"Failed to create singleton pod '$transformed'. The pod is null."
-				);
-			} else if (object is! PodProvider) {
+        throw PodCreationException.withResource(
+          definition?.description,
+          transformed,
+          "Failed to create singleton pod '$transformed'. The pod is null.",
+        );
+      } else if (object is! PodProvider) {
         throw PodIsNotAProviderException(transformed, type ?? object.getClass());
       } else if (definition != null) {
-				definition.isPodProvider = true;
-			}
+        definition.isPodProvider = true;
+      }
 
       return object;
     }
-    
+
     // If not a provider pod, return as-is
     if (object is! PodProvider) {
       return object;
     } else {
       // Handle PodProvider
       if (definition != null) {
-				definition.isPodProvider = true;
-			}
+        definition.isPodProvider = true;
+      }
 
       Object? po;
       if (definition == null) {
@@ -1352,7 +1577,7 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
           po = nullable.getValue();
         }
       }
-      
+
       if (po == null) {
         if (definition == null && await containsDefinition(transformed)) {
           definition = await getLocalMergedPodDefinition(transformed);
@@ -1366,23 +1591,23 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
         final provider = await getProviderObject(object, type, transformed, !synthetic);
         po = provider.getValue();
       }
-      
+
       return po;
     }
   }
 
   /// {@template abstract_pod_factory_convert}
   /// Converts a pod instance to the required type if necessary.
-  /// 
+  ///
   /// This method checks if the pod instance matches the required type and
   /// attempts to convert it using the conversion service if not.
-  /// 
+  ///
   /// [name] the name of the pod
   /// [pod] the pod instance to convert
   /// [type] the required type
   /// [source] the source type of the pod instance
   /// Returns the converted pod instance
-  /// 
+  ///
   /// Throws [PodNotOfRequiredTypeException] if conversion fails
   /// {@endtemplate}
   T convertIfNecessary<T>(String name, Object pod, [Class? type, Class? source]) {
@@ -1394,27 +1619,31 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
         if (cls.isInstance(pod)) {
           sourceType = cls;
         }
-      } catch (ex) { }
+      } catch (ex) {}
     }
 
-		if (type != null && !type.isInstance(pod)) {
-			try {
-				final convertedPod = _conversionService.convertTo(pod, type, sourceType);
-				if (convertedPod == null) {
-					throw PodNotOfRequiredTypeException(name: name, requiredType: type, actualType: pod.getClass());
-				}
+    if (type != null && !type.isInstance(pod)) {
+      try {
+        final convertedPod = _conversionService.convertTo(pod, type, sourceType);
+        if (convertedPod == null) {
+          throw PodNotOfRequiredTypeException(
+            name: name,
+            requiredType: type,
+            actualType: pod.getClass(),
+          );
+        }
 
-				return convertedPod as T;
-			} on TypeError catch (ex) {
-				if (_logger.getIsTraceEnabled()) {
-					_logger.trace("Failed to convert pod '$name' to required type '${type.getSimpleName()}'", error: ex);
-				}
+        return convertedPod as T;
+      } on TypeError catch (ex) {
+        if (_logger.getIsTraceEnabled()) {
+          _logger.trace("Failed to convert pod '$name' to required type '${type.getSimpleName()}'", error: ex);
+        }
 
-				throw PodNotOfRequiredTypeException(name: name, requiredType: pod.getClass(), actualType: type);
-			}
-		}
+        throw PodNotOfRequiredTypeException(name: name, requiredType: pod.getClass(), actualType: type);
+      }
+    }
 
-		return pod as T;
+    return pod as T;
   }
 
   // -----------------------------------------------------------------------------------------------------
@@ -1423,10 +1652,10 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
 
   /// {@template abstract_pod_factory_is_name_in_use}
   /// Checks if a pod name is already in use in this factory.
-  /// 
+  ///
   /// This method checks if the name is used as an alias, contains a local pod,
   /// or has dependent pods registered.
-  /// 
+  ///
   /// Usage Example:
   /// ```dart
   /// final factory = getPodFactory();
@@ -1436,7 +1665,7 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
   ///   print('Pod name is available');
   /// }
   /// ```
-  /// 
+  ///
   /// [name] the pod name to check
   /// Returns `true` if the name is in use, `false` otherwise
   /// {@endtemplate}
@@ -1446,10 +1675,10 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
 
   /// {@template abstract_pod_factory_clear_metadata_cache}
   /// Clears the metadata cache for pods that are not eligible for caching.
-  /// 
+  ///
   /// This method marks pod definitions as stale if they haven't been created yet,
   /// forcing them to be re-merged on next access.
-  /// 
+  ///
   /// Usage Example:
   /// ```dart
   /// final factory = getPodFactory();
@@ -1457,28 +1686,28 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
   /// ```
   /// {@endtemplate}
   void clearMetadataCache() {
-		_mergedPodDefinitions.forEach((name, bd) {
-			if (!isPodEligibleForMetadataCaching(name)) {
-				bd.setIsStale(true);
-			}
-		});
-	}
+    _mergedPodDefinitions.forEach((name, bd) {
+      if (!isPodEligibleForMetadataCaching(name)) {
+        bd.setIsStale(true);
+      }
+    });
+  }
 
   /// {@template abstract_pod_factory_get_definition}
   /// Return the registered PodDefinition for the specified pod, allowing access
   /// to its property values and constructor argument value (which can be
   /// modified during pod factory post-processing).
-  /// 
+  ///
   /// A returned PodDefinition object should not be a copy but the original
   /// definition object as registered in the factory. This means that it should
   /// be castable to a more specific implementation type, if necessary.
-  /// 
+  ///
   /// NOTE: This method does not consider ancestor factories.
   /// It is only meant for accessing local pod definitions of the factory.
-  /// 
+  ///
   /// [podName] the name of the pod
   /// Returns the registered PodDefinition
-  /// 
+  ///
   /// Throws [PodNotFoundException] if there is no pod with the given name
   /// defined in this factory
   /// {@endtemplate}
@@ -1486,27 +1715,27 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
 
   /// {@template abstract_pod_factory_get_definition_by_class}
   /// Returns the pod definition for the specified class type.
-  /// 
+  ///
   /// This method looks up the pod definition by class rather than by name.
-  /// 
+  ///
   /// Usage Example:
   /// ```dart
   /// final factory = getPodFactory();
   /// final definition = factory.getDefinitionByClass(Class.forObject(MyService));
   /// ```
-  /// 
+  ///
   /// [type] the class type to look up
   /// Returns the [PodDefinition] for the specified class
-  /// 
+  ///
   /// Throws [PodNotFoundException] if no pod is defined for the class
   /// {@endtemplate}
   PodDefinition getDefinitionByClass(Class type);
 
   /// Check if pod definition exists locally.
-  /// 
+  ///
   /// Subclasses should implement this method to provide the actual pod
   /// definition existence check logic.
-  /// 
+  ///
   /// Usage Example:
   /// ```dart
   /// final provider = getPodFactory();
@@ -1520,14 +1749,14 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
 
   /// {@template abstract_pod_factory_do_create}
   /// Abstract method for creating pod instances that must be implemented by subclasses.
-  /// 
+  ///
   /// This method is responsible for the actual pod instantiation logic, including:
   /// - Resolving the pod class
   /// - Invoking constructors or provider methods
   /// - Populating properties and dependencies
   /// - Applying post-processors
   /// - Handling initialization callbacks
-  /// 
+  ///
   /// Usage Example:
   /// ```dart
   /// class MyPodFactory extends AbstractPodFactory {
@@ -1536,22 +1765,22 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
   ///     // Implementation to create the pod instance
   ///     final constructor = definition.constructor;
   ///     final instance = constructor.invoke(args ?? []);
-  ///     
+  ///
   ///     // Apply property population
   ///     definition.properties.forEach((property) {
   ///       property.applyTo(instance);
   ///     });
-  ///     
+  ///
   ///     return instance;
   ///   }
   /// }
   /// ```
-  /// 
+  ///
   /// [name] the name of the pod to create
   /// [definition] the pod definition containing creation instructions
   /// [args] optional constructor arguments
   /// Returns the created pod instance
-  /// 
+  ///
   /// Throws [PodCreationException] if pod creation fails
   /// {@endtemplate}
   FutureOr<Object> doCreate(String name, RootPodDefinition definition, List<ArgumentValue>? args);

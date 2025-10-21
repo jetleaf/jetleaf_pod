@@ -124,7 +124,7 @@ import 'argument_value_holder.dart';
 /// **Executable Strategy**
 ///
 /// Defines the contract for strategies that determine how a pod
-/// (bean/instance) should be created by selecting an appropriate
+/// (instance) should be created by selecting an appropriate
 /// constructor or factory method.  
 ///
 /// This abstraction allows the framework to support multiple

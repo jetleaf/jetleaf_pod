@@ -255,9 +255,9 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
   /// ```
   /// {@endtemplate}
   void freezeConfiguration() {
-    clearMetadataCache();
     _configurationFrozen = true;
-    _frozenPodDefinitionNames = List.unmodifiable(getDefinitionNames());
+    _frozenPodDefinitionNames = List.unmodifiable(getPodRegistry().getDefinitionNames());
+    clearMetadataCache();
   }
 
   // ------------------------------------------------------------------------------------------------
@@ -277,11 +277,6 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
 
   @override
   String getPackageName() => PackageNames.POD;
-
-  @override
-  void cacheMergedPodDefinition(RootPodDefinition root, String name) {
-    super.cacheMergedPodDefinition(root, name);
-  }
 
   @override
   Future<void> addSingleton(String name, {ObjectHolder<Object>? object, ObjectFactory<Object>? factory}) async {
@@ -366,19 +361,19 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
 
   @override
   PodDefinition getDefinitionByClass(Class type) {
-    final names = getDefinitionNames();
-    for (final name in names) {
-      final podDef = getDefinition(name);
-      if (podDef.type == type || podDef.type.isSubclassOf(type) || type.isAssignableFrom(podDef.type)) {
-        return podDef;
+    try {
+      return getPodRegistry().getDefinitionByClass(type);
+    } on NoSuchPodDefinitionException catch (_) {
+      if(_logger.getIsWarnEnabled()) {
+        _logger.warn("No pod of type '${type.getQualifiedName()}' is defined");
       }
+      
+      throw PodDefinitionStoreException(
+        name: type.getName(),
+        resourceDescription: null,
+        msg: "No pod of type '${type.getQualifiedName()}' is defined"
+      );
     }
-
-    throw PodDefinitionStoreException(
-      name: type.getQualifiedName(),
-      resourceDescription: null,
-      msg: "No pod of type '$type' is defined"
-    );
   }
 
   @override
@@ -582,7 +577,7 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
 
 						onSuppressedException(e);
 						// Ignore: indicates a circular reference when autowiring constructors.
-						// We want to find matches other than the currently created bean itself.
+						// We want to find matches other than the currently created pod itself.
 						continue;
 					}
 				}
@@ -632,34 +627,6 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
     }
     
     return DefaultObjectProvider(name, this, objects);
-  }
-
-  @override
-  Future<Object> getNamedObject(String name, [List<ArgumentValue>? args]) async {
-    final result = await super.getNamedObject(name, args);
-
-    return result;
-  }
-
-  @override
-  Future<Object> getObject(Class<Object> type, [List<ArgumentValue>? args]) async {
-    final result = await super.getObject(type, args);
-
-    return result;
-  }
-
-  @override
-  Future<T> get<T>(Class<T> type, [List<ArgumentValue>? args]) async {
-    final result = await super.get(type, args);
-
-    return result;
-  }
-
-  @override
-  Future<T> getPod<T>(String name, [List<ArgumentValue>? args, Class<T>? type]) async {
-    final result = await super.getPod(name, args, type);
-
-    return result;
   }
 
   @override
@@ -842,8 +809,8 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
 
   @override
   Future<void> preInstantiateSingletons() async {
-    if (_logger.getIsTraceEnabled()) {
-      _logger.trace("Starting pre-instantiation of singleton pods in $runtimeType. Scanning ${getNumberOfPodDefinitions()} pod definitions.");
+    if (_logger.getIsDebugEnabled()) {
+      _logger.debug("Starting pre-instantiation of singleton pods in $runtimeType.");
     }
 
     final podNames = List<String>.from(getDefinitionNames());
@@ -852,9 +819,13 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
       try {
         final def = getLocalMergedPodDefinition(podName);
         if (!def.isAbstractAndNoFactory() && def.scope.isSingleton) {
-          final notLazy = def.lifecycle.isLazy != null ? !def.lifecycle.isLazy! : false;
+          final isLazy = def.lifecycle.isLazy != null && def.lifecycle.isLazy!;
 
-          if (!notLazy) {
+          if (isLazy) {
+            if (_logger.getIsTraceEnabled()) {
+              _logger.trace("Pod '$podName' is marked as a lazy singleton. Skipping pre-instantiation");
+            }
+          } else {
             try {
               if (await isPodProvider(podName)) {
                 final ppName = podProviderName(podName);
@@ -872,10 +843,6 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
               }
 
               rethrow;
-            }
-          } else {
-            if (_logger.getIsTraceEnabled()) {
-              _logger.trace("Pod '$podName' is marked as a lazy singleton. Skipping pre-instantiation");
             }
           }
         } else {
@@ -1008,8 +975,6 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
 
     if (containsDefinition(podName)) {
       await getPodRegistry().removeDefinition(podName);
-
-      _frozenPodDefinitionNames = [];
       resetDefinition(podName);
     }
 
@@ -1934,11 +1899,11 @@ final class _DependencyObjectFactory<T> extends ObjectFactory<T> {
 /// **Dependency Object Provider**
 ///
 /// Extends [_DependencyObjectFactory] and implements [ObjectProvider].
-/// Designed for cases where multiple candidate beans/pods of the same
+/// Designed for cases where multiple candidate pods of the same
 /// type may exist. Provides advanced lookup and iteration semantics.
 ///
 /// # Purpose
-/// - Provides a stream-like view over multiple candidate beans.
+/// - Provides a stream-like view over multiple candidate pods.
 /// - Supports conditional retrieval: `getIfAvailable`, `getIfUnique`.
 /// - Supports consumer-based callbacks: `ifAvailable`, `ifUnique`.
 /// - Implements collection-like operations: iteration, `toList()`,
@@ -1954,12 +1919,12 @@ final class _DependencyObjectFactory<T> extends ObjectFactory<T> {
 /// ```dart
 /// final provider = DependencyObjectProvider<Service>(descriptor, factory);
 ///
-/// // Stream all matching beans
+/// // Stream all matching pods
 /// await for (final holder in provider.stream()) {
 ///   print(holder.getValue());
 /// }
 ///
-/// // Get single bean if available
+/// // Get single pod if available
 /// final service = await provider.getIfAvailable();
 ///
 /// // Execute only if unique

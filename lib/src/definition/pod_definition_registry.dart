@@ -12,6 +12,8 @@
 // 
 // 🔧 Powered by Hapnium — the Dart backend engine 🍃
 
+import 'package:jetleaf_lang/lang.dart';
+
 import 'pod_definition.dart';
 
 /// {@template pod_definition_registry}
@@ -126,6 +128,24 @@ abstract interface class PodDefinitionRegistry implements ListablePodDefinitionR
   /// ```
   /// {@endtemplate}
   PodDefinition getDefinition(String name);
+
+  /// {@template abstract_pod_factory_get_definition_by_class}
+  /// Returns the pod definition for the specified class type.
+  ///
+  /// This method looks up the pod definition by class rather than by name.
+  ///
+  /// Usage Example:
+  /// ```dart
+  /// final factory = getPodFactory();
+  /// final definition = factory.getDefinitionByClass(Class.forObject(MyService));
+  /// ```
+  ///
+  /// [type] the class type to look up
+  /// Returns the [PodDefinition] for the specified class
+  ///
+  /// Throws [PodNotFoundException] if no pod is defined for the class
+  /// {@endtemplate}
+  PodDefinition getDefinitionByClass(Class type);
 
   /// {@template pod_definition_registry_is_name_in_use}
   /// Returns `true` if [name] is currently in use in this registry.

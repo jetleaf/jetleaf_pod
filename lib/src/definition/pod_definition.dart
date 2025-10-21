@@ -121,6 +121,9 @@ abstract class PodDefinition with EqualsAndHashCode, ToString {
   /// {@macro factory_method_descriptor}
   FactoryMethodDesign factoryMethod;
 
+  /// Whether this pod is eligible for proxying.
+  bool canProxy = true;
+
   /// Whether this pod has been resolved before instantiation.
   bool hasBeforeInstantiationResolved = false;
 

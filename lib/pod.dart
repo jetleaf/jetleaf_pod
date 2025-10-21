@@ -20,7 +20,7 @@
 ///
 /// ## 🫘 Overview
 ///
-/// - **Alias Registry** – Manage alternative names for pods (beans/objects).
+/// - **Alias Registry** – Manage alternative names for pods (objects).
 /// - **Core Factories** – Define and resolve object creation strategies.
 /// - **Pod Definitions** – Represent metadata and configuration for pods.
 /// - **Expressions** – Evaluate or transform pod references.

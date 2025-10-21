@@ -20,7 +20,7 @@ import '../helpers/enums.dart';
 /// Describes a dependency required by a component or pod.
 ///
 /// This class is used to specify the **name** of the dependency, an optional
-/// **qualifier** (to disambiguate multiple beans of the same type), and whether
+/// **qualifier** (to disambiguate multiple pods of the same type), and whether
 /// the dependency is **required**.
 ///
 /// ### Example
@@ -36,6 +36,9 @@ class DependencyDesign with EqualsAndHashCode, ToString {
   /// The unique name of the dependency being described.
   String? name;
 
+  /// The unique class of the dependency being described.
+  Class? type;
+
   /// Whether this dependency is a prototype in a singleton scope.
   /// 
   /// This is used to determine whether the dependency should be created
@@ -47,7 +50,7 @@ class DependencyDesign with EqualsAndHashCode, ToString {
   /// optional [qualifier], and required flag.
   /// 
   /// {@macro dependency_descriptor}
-  DependencyDesign({this.name, this.prototypeInSingleton = false});
+  DependencyDesign({this.name, this.type, this.prototypeInSingleton = false});
 
   @override
   List<Object?> equalizedProperties() => [name, prototypeInSingleton];

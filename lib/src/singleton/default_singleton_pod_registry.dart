@@ -1014,7 +1014,7 @@ final class TypedInstance {
   ///
   /// Example:
   /// ```dart
-  /// print(typedInstance.type.getQualifiedName()); // "com.example.DatabaseService"
+  /// print(typedInstance.type.getQualifiedName()); // "package:example/test.dart.DatabaseService"
   /// ```
   /// {@endtemplate}
   final Class? type;

@@ -71,6 +71,12 @@ class SimplePodDefinitionRegistry extends SimpleAliasRegistry implements PodDefi
   /// Internal storage for pod definitions, keyed by pod name.
   final Map<String, PodDefinition> _definitions = HashMap<String, PodDefinition>();
 
+  /// Internal storage for pod definitions, keyed by pod type.
+  final Map<Class, PodDefinition> _classedDefinitions = HashMap<Class, PodDefinition>();
+
+  /// Internal storage for pod definitions, keyed by pod type qualified name.
+  final Map<String, PodDefinition> _classQualifiedNameDefinitions = HashMap<String, PodDefinition>();
+
   /// {@macro simple_pod_definition_registry}
   ///
   /// Creates a new simple pod definition registry instance.
@@ -95,6 +101,45 @@ class SimplePodDefinitionRegistry extends SimpleAliasRegistry implements PodDefi
   }
 
   @override
+  PodDefinition getDefinitionByClass(Class type) {
+    PodDefinition? pod = _classedDefinitions[type];
+    if (pod != null) {
+      return pod;
+    }
+
+    pod = _classQualifiedNameDefinitions[type.getQualifiedName()];
+    if (pod != null) {
+      return pod;
+    }
+
+    for (final entry in _classedDefinitions.entries) {
+      final entryType = entry.key;
+
+      if (entryType == type || entryType.isSubclassOf(type) || type.isAssignableFrom(entryType) || entryType.isAssignableFrom(type)) {
+        return entry.value;
+      }
+    }
+
+    for (final entry in _classQualifiedNameDefinitions.entries) {
+      final entryType = entry.value.type;
+
+      if (entryType == type || entryType.isSubclassOf(type) || type.isAssignableFrom(entryType) || entryType.isAssignableFrom(type)) {
+        return entry.value;
+      }
+    }
+
+    for (final definition in _definitions.values) {
+      final defType = definition.type;
+
+      if (defType == type || defType.isSubclassOf(type) || type.isAssignableFrom(defType) || defType.isAssignableFrom(type)) {
+        return definition;
+      }
+    }
+
+    throw NoSuchPodDefinitionException.byType(type);
+  }
+
+  @override
   int getNumberOfPodDefinitions() => _definitions.length;
 
   @override
@@ -114,6 +159,8 @@ class SimplePodDefinitionRegistry extends SimpleAliasRegistry implements PodDefi
     }
 
     _definitions[name] = pod;
+    _classedDefinitions[pod.type] = pod;
+    _classQualifiedNameDefinitions[pod.type.getQualifiedName()] = pod;
   }
 
   @override
