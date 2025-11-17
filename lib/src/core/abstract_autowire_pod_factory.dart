@@ -16,7 +16,6 @@ import 'dart:async';
 
 import 'package:jetleaf_convert/convert.dart';
 import 'package:jetleaf_lang/lang.dart';
-import 'package:jetleaf_logging/logging.dart';
 import 'package:meta/meta.dart';
 
 import '../definition/commons.dart';
@@ -80,8 +79,7 @@ import 'pod_factory.dart';
 /// final pod = factory.createPod(podDefinition);
 /// ```
 /// {@endtemplate}
-abstract class AbstractAutowirePodFactory extends AbstractPodFactory
-    implements AutowirePodFactory {
+abstract class AbstractAutowirePodFactory extends AbstractPodFactory implements AutowirePodFactory {
   /// {@macro allowCircularReferences}
   /// Controls whether circular references are allowed during autowiring.
   ///
@@ -141,9 +139,7 @@ abstract class AbstractAutowirePodFactory extends AbstractPodFactory
   /// during pod instantiation.
   late ExecutableStrategy _executableStrategy;
 
-  /// {@macro autowirePodFactoryLogger}
-  /// Logger instance for autowiring operations and diagnostics.
-  final Log logger = LogFactory.getLog(AbstractAutowirePodFactory);
+  final List<CreatedPodHolder> _createdPods = [];
 
   /// {@macro abstract_autowire_pod_factory}
   ///
@@ -161,6 +157,7 @@ abstract class AbstractAutowirePodFactory extends AbstractPodFactory
     _currentlyCreatedPod.set("");
     _initMethodsManager = InitMethodsManager();
     _executableStrategy = SimpleExecutableStrategy(this);
+    _createdPods.clear();
   }
 
   // -----------------------------------------------------------------------------------------------------
@@ -193,16 +190,14 @@ abstract class AbstractAutowirePodFactory extends AbstractPodFactory
       _allowRawInjection;
 
   @override
-  void copyConfigurationFrom(ConfigurablePodFactory otherFactory) {
-    super.copyConfigurationFrom(otherFactory);
-    if (otherFactory is AbstractAutowirePodFactory) {
-      _allowCircularReferences = otherFactory._allowCircularReferences;
-      _allowDefinitionOverriding = otherFactory._allowDefinitionOverriding;
-      _ignoredDependencyTypes.addAll(otherFactory._ignoredDependencyTypes);
-      _ignoredDependencyInterfaces.addAll(
-        otherFactory._ignoredDependencyInterfaces,
-      );
-      _initMethodsManager = otherFactory._initMethodsManager;
+  void copyConfigurationFrom(ConfigurablePodFactory other) {
+    super.copyConfigurationFrom(other);
+    if (other is AbstractAutowirePodFactory) {
+      _allowCircularReferences = other._allowCircularReferences;
+      _allowDefinitionOverriding = other._allowDefinitionOverriding;
+      _ignoredDependencyTypes.addAll(other._ignoredDependencyTypes);
+      _ignoredDependencyInterfaces.addAll(other._ignoredDependencyInterfaces);
+      _initMethodsManager = other._initMethodsManager;
     }
   }
 
@@ -230,6 +225,11 @@ abstract class AbstractAutowirePodFactory extends AbstractPodFactory
       );
     }
 
+    final created = _createdPods.find((c) => c.$1.equals(name) && c.$2 == definition);
+    if (created != null) {
+      return created.$3;
+    }
+
     try {
       _currentlyCreatedPod.set(name);
 
@@ -244,6 +244,10 @@ abstract class AbstractAutowirePodFactory extends AbstractPodFactory
         logger.trace("Finished creating instance of pod $name");
       }
 
+      if (definition.scope.isSingleton) {
+        _createdPods.add((name, definition, instance));
+      }
+
       return instance;
     } finally {
       _currentlyCreatedPod.remove();
@@ -256,7 +260,7 @@ abstract class AbstractAutowirePodFactory extends AbstractPodFactory
       ..scope = ScopeDesign.type(ScopeType.PROTOTYPE.name)
       ..autowireCandidate = AutowireCandidateDescriptor(autowireCandidate: true, autowireMode: AutowireMode.fromValue(autowireMode));
 
-    if (autowireMode == AutowireMode.BY_TYPE) {
+    if (autowireMode == AutowireMode.BY_TYPE.value) {
       return await instantiateUsingConstructor(podClass.getName(), root, null, null);
     } else {
       Object instance = await instantiateUsingConstructor(podClass.getName(), root, null, null);
@@ -582,7 +586,7 @@ abstract class AbstractAutowirePodFactory extends AbstractPodFactory
   /// @param type The pod class
   /// @return The processed pod instance
   @protected
-  Future<Object> applyAfterInstantiationProcessing(Object existing, String podName, Class type) async {
+  Future<void> applyAfterInstantiationProcessing(Object existing, String podName, Class type) async {
     Object pod = existing;
 
     if (hasPodInstantiationProcessors()) {
@@ -593,8 +597,6 @@ abstract class AbstractAutowirePodFactory extends AbstractPodFactory
         }
       }
     }
-
-    return pod;
   }
 
   /// {@macro determine_property_values_from_pod_aware_processors}
@@ -708,12 +710,14 @@ abstract class AbstractAutowirePodFactory extends AbstractPodFactory
           }
         }
 
-        final processed = await processor.processBeforeInitialization(pod, type, podName,);
-        if (processed == null) {
-          return pod;
-        }
+        if (shouldProcess) {
+          final processed = await processor.processBeforeInitialization(pod, type, podName,);
+          if (processed == null) {
+            continue;
+          }
 
-        pod = processed;
+          pod = processed;
+        }
       }
     }
 
@@ -792,7 +796,7 @@ abstract class AbstractAutowirePodFactory extends AbstractPodFactory
         logger.trace('Eagerly caching pod $podName to allow potential circular references resolution');
       }
 
-      final create = () async {
+      Future<ObjectHolder<Object>> create() async {
         return await getEarlyPodReference(
           podName,
           root,
@@ -802,7 +806,7 @@ abstract class AbstractAutowirePodFactory extends AbstractPodFactory
             qualifiedName: podClass.getQualifiedName(),
           ),
         );
-      };
+      }
 
       addSingleton(podName, factory: SimpleObjectFactory(([args]) async => create()));
     }
@@ -895,6 +899,11 @@ abstract class AbstractAutowirePodFactory extends AbstractPodFactory
     // Obtain from factory method
     if (root.factoryMethod.methodName.isNotEmpty) {
       final instance = await instantiateUsingFactoryMethod(podName, root, args);
+      if (instance is Future) {
+        Object result = await instance;
+        return (result, result.getClass());
+      }
+
       return (instance, instance.getClass());
     }
 
@@ -907,11 +916,15 @@ abstract class AbstractAutowirePodFactory extends AbstractPodFactory
   @protected
   Future<Object> instantiateFromSupplier(Object supplier) async {
     if (supplier is Supplier) {
-      return supplier.getOrThrow();
+      return supplier.get();
     }
 
     if (supplier is ThrowingSupplier) {
-      return supplier.getOrThrow();
+      return supplier.get();
+    }
+
+    if (supplier is Provider) {
+      return supplier.get();
     }
 
     return supplier;
@@ -1145,7 +1158,7 @@ abstract class AbstractAutowirePodFactory extends AbstractPodFactory
       String fieldName = field.getName();
       final clazz = field.getReturnClass();
 
-      if (!pvs.contains(fieldName)) {
+      if (!pvs.containsProperty(fieldName)) {
         // Skip simple properties (primitives, strings, etc.)
         if (clazz.isPrimitive()) {
           continue;
@@ -1245,6 +1258,7 @@ abstract class AbstractAutowirePodFactory extends AbstractPodFactory
           // Fallback to cached fields for field injection and performance
           final fields = ph.$2.getFields();
           final field = fields.firstWhereOrNull((f) => f.getName().equalsIgnoreCase(propertyName) && !f.getReturnClass().isPrimitive());
+          
           if (field != null) {
             Class type = field.getReturnClass();
             final autowiredValue = await resolveDependency(
@@ -1299,7 +1313,6 @@ abstract class AbstractAutowirePodFactory extends AbstractPodFactory
         );
       }
     }
-    ;
   }
 
   /// {@macro check_dependencies}
@@ -1318,7 +1331,7 @@ abstract class AbstractAutowirePodFactory extends AbstractPodFactory
     final unsatisfiedProperties = getUnsatisfiedNonSimpleProperties(root, ph);
 
     for (final property in unsatisfiedProperties.entries) {
-      if (!pvs.contains(property.key)) {
+      if (!pvs.containsProperty(property.key)) {
         final returnClass = ph.$2.getField(property.key)?.getReturnClass();
         final isSimple = returnClass?.isPrimitive() ?? false;
 
@@ -1525,6 +1538,9 @@ abstract class AbstractAutowirePodFactory extends AbstractPodFactory
 /// ```
 /// {@endtemplate}
 typedef PodHolder = (Object pod, Class podClass);
+
+/// The holder for created pods
+typedef CreatedPodHolder = (String name, PodDefinition definition, Object pod);
 
 /// {@template allowCircularReferences}
 /// Circular reference allowance configuration.

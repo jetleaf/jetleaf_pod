@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="description" content="jetleaf_pod API docs, for the Dart programming language.">
+  <title>jetleaf_pod - Dart API docs</title>
+
+
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <link rel="stylesheet" href="static-assets/github.css?v1">
+  <link rel="stylesheet" href="static-assets/styles.css?v1">
+  <link rel="icon" href="static-assets/favicon.png?v1">
+  
+</head>
+
+<body data-base-href="" data-using-base-href="false" class="light-theme">
+<div id="overlay-under-drawer"></div>
+<header id="title">
+  <span id="sidenav-left-toggle" class="material-symbols-outlined" role="button" tabindex="0">menu</span>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li><a href="https://jetleaf.hapnium.com">jetleaf_pod package</a></li>
+  </ol>
+  <div class="self-name">jetleaf_pod</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+  <button class="toggle" id="theme-button" title="Toggle between light and dark mode" aria-label="Light and dark mode toggle">
+    <span id="dark-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      dark_mode
+    </span>
+    <span id="light-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      light_mode
+    </span>
+  </button>
+</header>
+<main>
+  <div id="dartdoc-main-content" class="main-content">
+      
+<section class="desc markdown">
+  <h1 id="-jetleaf-pod--dependency-injection--ioc-container">🫘 JetLeaf Pod — Dependency Injection &amp; IoC Container</h1>
+<p><a href="https://pub.dev/packages/jetleaf_pod"><img src="https://img.shields.io/badge/version-1.0.0-blue" alt="pub package"></a>
+<a href="#license"><img src="https://img.shields.io/badge/license-JetLeaf-green" alt="License"></a>
+<a href="https://dart.dev"><img src="https://img.shields.io/badge/sdk-%3E%3D3.9.0-blue" alt="Dart SDK"></a></p>
+<p>A lightweight, modular dependency injection (DI) and inversion-of-control (IoC) container for managing object creation, dependency resolution, and application lifecycle in JetLeaf applications.</p>
+<h2 id="-overview">📋 Overview</h2>
+<p><code>jetleaf_pod</code> provides a flexible DI/IoC framework with:</p>
+<ul>
+<li><strong>Pod Factories</strong> — Define and resolve object creation strategies</li>
+<li><strong>Pod Definitions</strong> — Register metadata and configuration for pods</li>
+<li><strong>Lifecycle Hooks</strong> — Control object initialization and destruction</li>
+<li><strong>Scopes</strong> — Manage pod lifetimes (singleton, prototype, request-scoped)</li>
+<li><strong>Alias Registry</strong> — Map multiple names to the same pod</li>
+<li><strong>Pod Expressions</strong> — Evaluate and transform pod references</li>
+<li><strong>Startup Orchestration</strong> — Coordinate application initialization</li>
+</ul>
+<h2 id="-quick-start">🚀 Quick Start</h2>
+<h3 id="installation">Installation</h3>
+<pre class="language-yaml"><code class="language-yaml">dependencies:
+  jetleaf_pod:
+    path: ./jetleaf_pod
+</code></pre>
+<h3 id="basic-usage">Basic Usage</h3>
+<pre class="language-dart"><code class="language-dart">import 'package:jetleaf_pod/jetleaf_pod.dart';
+
+class UserService {
+  String getUser(String id) =&gt; 'User: $id';
+}
+
+void main() {
+  // Create a pod factory
+  final factory = DefaultListablePodFactory();
+
+  // Register a pod definition
+  factory.registerDefinition(
+    PodDefinition(
+      name: 'userService',
+      create: () =&gt; UserService(),
+      scope: Scope.singleton,
+    ),
+  );
+
+  // Retrieve and use the pod
+  final userService = factory.getPod&lt;UserService&gt;('userService');
+  print(userService.getUser('123'));  // Output: User: 123
+}
+</code></pre>
+<h2 id="-key-components">📚 Key Components</h2>
+<h3 id="1-pod-factories">1. Pod Factories</h3>
+<p><strong>DefaultListablePodFactory</strong> — The main factory for pod creation and management:</p>
+<pre class="language-dart"><code class="language-dart">import 'package:jetleaf_pod/jetleaf_pod.dart';
+
+void main() {
+  final factory = DefaultListablePodFactory();
+
+  // Register pods
+  factory.registerDefinition(
+    PodDefinition(
+      name: 'database',
+      create: () =&gt; Database('localhost', 5432),
+      scope: Scope.singleton,
+    ),
+  );
+
+  // Get pod by name
+  final db = factory.getPod&lt;Database&gt;('database');
+
+  // Get pod by type (requires only one pod of that type)
+  final db2 = factory.getPod&lt;Database&gt;();
+
+  // Check if pod exists
+  final exists = factory.containsPod('database');
+
+  // Get all pods of a type
+  final allDatabases = factory.getPodsOfType&lt;Database&gt;();
+}
+
+class Database {
+  final String host;
+  final int port;
+  Database(this.host, this.port);
+}
+</code></pre>
+<h3 id="2-pod-definitions">2. Pod Definitions</h3>
+<p><strong>PodDefinition</strong> — Register objects and their creation strategy:</p>
+<pre class="language-dart"><code class="language-dart">// Factory function definition
+final def1 = PodDefinition(
+  name: 'service',
+  create: () =&gt; MyService(),
+  scope: Scope.singleton,
+  description: 'Main application service',
+);
+
+// Factory class instance (lazy instantiation)
+final def2 = PodDefinition(
+  name: 'logger',
+  create: () =&gt; Logger(),
+  scope: Scope.prototype,  // New instance each time
+  lazyInit: true,  // Don't create until requested
+);
+
+// Pod with initialization callback
+final def3 = PodDefinition(
+  name: 'repository',
+  create: () {
+    final repo = UserRepository();
+    repo.initialize();  // Initialize after creation
+    return repo;
+  },
+  scope: Scope.singleton,
+);
+</code></pre>
+<h3 id="3-scopes">3. Scopes</h3>
+<p><strong>Pod Lifetimes</strong> — Control when pods are created and destroyed:</p>
+<pre class="language-dart"><code class="language-dart">import 'package:jetleaf_pod/jetleaf_pod.dart';
+
+void main() {
+  final factory = DefaultListablePodFactory();
+
+  // Singleton: one instance for entire application
+  factory.registerDefinition(
+    PodDefinition(
+      name: 'config',
+      create: () =&gt; AppConfig(),
+      scope: Scope.singleton,
+    ),
+  );
+
+  // Prototype: new instance each time
+  factory.registerDefinition(
+    PodDefinition(
+      name: 'request',
+      create: () =&gt; RequestContext(),
+      scope: Scope.prototype,
+    ),
+  );
+
+  // Multiple singletons return same instance
+  final config1 = factory.getPod&lt;AppConfig&gt;('config');
+  final config2 = factory.getPod&lt;AppConfig&gt;('config');
+  assert(identical(config1, config2));  // true
+
+  // Multiple prototypes return different instances
+  final req1 = factory.getPod&lt;RequestContext&gt;('request');
+  final req2 = factory.getPod&lt;RequestContext&gt;('request');
+  assert(identical(req1, req2));  // false
+}
+
+class AppConfig {
+  final String version = '1.0.0';
+}
+
+class RequestContext {
+  final String id = DateTime.now().toString();
+}
+</code></pre>
+<h3 id="4-lifecycle-hooks">4. Lifecycle Hooks</h3>
+<p><strong>Control object initialization and destruction</strong>:</p>
+<pre class="language-dart"><code class="language-dart">import 'package:jetleaf_pod/jetleaf_pod.dart';
+
+class DatabaseConnection {
+  late SqliteConnection _connection;
+
+  // Called after pod is created
+  Future&lt;void&gt; initialize() async {
+    print('Initializing database...');
+    _connection = await SqliteConnection.connect(':memory:');
+  }
+
+  // Called before pod is destroyed
+  Future&lt;void&gt; destroy() async {
+    print('Closing database...');
+    await _connection.close();
+  }
+}
+
+void main() {
+  final factory = DefaultListablePodFactory();
+
+  factory.registerDefinition(
+    PodDefinition(
+      name: 'database',
+      create: () =&gt; DatabaseConnection(),
+      scope: Scope.singleton,
+      initMethod: 'initialize',  // Lifecycle method names
+      destroyMethod: 'destroy',
+    ),
+  );
+
+  // Initialization happens automatically
+  final db = factory.getPod&lt;DatabaseConnection&gt;('database');
+  
+  // Later, when shutting down
+  factory.destroy();  // Calls destroy() on all pods
+}
+</code></pre>
+<h3 id="5-alias-registry">5. Alias Registry</h3>
+<p><strong>Register multiple names for the same pod</strong>:</p>
+<pre class="language-dart"><code class="language-dart">import 'package:jetleaf_pod/jetleaf_pod.dart';
+
+class EmailService {
+  void send(String to, String body) {
+    print('Sending email to $to');
+  }
+}
+
+void main() {
+  final factory = DefaultListablePodFactory();
+  final aliasRegistry = SimpleAliasRegistry();
+
+  // Register the pod
+  factory.registerDefinition(
+    PodDefinition(
+      name: 'emailService',
+      create: () =&gt; EmailService(),
+      scope: Scope.singleton,
+    ),
+  );
+
+  // Register aliases
+  aliasRegistry.registerAlias('sendEmail', 'emailService');
+  aliasRegistry.registerAlias('notificationService', 'emailService');
+
+  // All names point to the same pod
+  final service1 = factory.getPod&lt;EmailService&gt;('emailService');
+  final service2 = factory.getPod&lt;EmailService&gt;('sendEmail');
+  final service3 = factory.getPod&lt;EmailService&gt;('notificationService');
+  
+  assert(identical(service1, service2));  // true
+  assert(identical(service2, service3));  // true
+}
+</code></pre>
+<h3 id="6-pod-expressions">6. Pod Expressions</h3>
+<p><strong>Evaluate and reference pods dynamically</strong>:</p>
+<pre class="language-dart"><code class="language-dart">import 'package:jetleaf_pod/jetleaf_pod.dart';
+
+void main() {
+  final factory = DefaultListablePodFactory();
+
+  // Register a configuration pod
+  factory.registerDefinition(
+    PodDefinition(
+      name: 'config',
+      create: () =&gt; AppConfig(databaseUrl: 'postgres://localhost'),
+      scope: Scope.singleton,
+    ),
+  );
+
+  // Reference pod properties in expressions
+  factory.registerDefinition(
+    PodDefinition(
+      name: 'database',
+      create: () {
+        final config = factory.getPod&lt;AppConfig&gt;('config');
+        return Database(config.databaseUrl);
+      },
+      scope: Scope.singleton,
+    ),
+  );
+}
+
+class AppConfig {
+  final String databaseUrl;
+  AppConfig({required this.databaseUrl});
+}
+
+class Database {
+  final String url;
+  Database(this.url);
+}
+</code></pre>
+<h2 id="-common-patterns">🎯 Common Patterns</h2>
+<h3 id="pattern-1-service-layering">Pattern 1: Service Layering</h3>
+<pre class="language-dart"><code class="language-dart">import 'package:jetleaf_pod/jetleaf_pod.dart';
+
+// Data layer
+class UserRepository {
+  List&lt;String&gt; getUsers() =&gt; ['Alice', 'Bob'];
+}
+
+// Business logic layer
+class UserService {
+  final UserRepository repository;
+  
+  UserService(this.repository);
+  
+  List&lt;String&gt; fetchAllUsers() =&gt; repository.getUsers();
+}
+
+// Presentation layer
+class UserController {
+  final UserService service;
+  
+  UserController(this.service);
+  
+  void displayUsers() {
+    final users = service.fetchAllUsers();
+    print('Users: $users');
+  }
+}
+
+void main() {
+  final factory = DefaultListablePodFactory();
+
+  // Register repository
+  factory.registerDefinition(
+    PodDefinition(
+      name: 'userRepository',
+      create: () =&gt; UserRepository(),
+      scope: Scope.singleton,
+    ),
+  );
+
+  // Register service (depends on repository)
+  factory.registerDefinition(
+    PodDefinition(
+      name: 'userService',
+      create: () =&gt; UserService(factory.getPod('userRepository')),
+      scope: Scope.singleton,
+    ),
+  );
+
+  // Register controller (depends on service)
+  factory.registerDefinition(
+    PodDefinition(
+      name: 'userController',
+      create: () =&gt; UserController(factory.getPod('userService')),
+      scope: Scope.singleton,
+    ),
+  );
+
+  final controller = factory.getPod&lt;UserController&gt;('userController');
+  controller.displayUsers();  // Output: Users: [Alice, Bob]
+}
+</code></pre>
+<h3 id="pattern-2-configuration-based-pod-registration">Pattern 2: Configuration-based Pod Registration</h3>
+<pre class="language-dart"><code class="language-dart">import 'package:jetleaf_pod/jetleaf_pod.dart';
+
+void registerApplicationPods(DefaultListablePodFactory factory) {
+  // Register all application pods
+  factory.registerDefinition(
+    PodDefinition(
+      name: 'config',
+      create: () =&gt; AppConfig.load(),
+      scope: Scope.singleton,
+    ),
+  );
+
+  factory.registerDefinition(
+    PodDefinition(
+      name: 'logger',
+      create: () =&gt; Logger(),
+      scope: Scope.singleton,
+    ),
+  );
+
+  factory.registerDefinition(
+    PodDefinition(
+      name: 'database',
+      create: () {
+        final config = factory.getPod&lt;AppConfig&gt;('config');
+        return Database(config.databaseUrl);
+      },
+      scope: Scope.singleton,
+      initMethod: 'connect',
+      destroyMethod: 'disconnect',
+    ),
+  );
+}
+
+void main() {
+  final factory = DefaultListablePodFactory();
+  registerApplicationPods(factory);
+
+  // Application is now ready to use
+  final db = factory.getPod&lt;Database&gt;('database');
+  print('Database connected');
+}
+
+class AppConfig {
+  final String databaseUrl;
+  
+  AppConfig({required this.databaseUrl});
+  
+  static AppConfig load() {
+    return AppConfig(databaseUrl: 'postgres://localhost:5432/myapp');
+  }
+}
+
+class Database {
+  final String url;
+  Database(this.url);
+  
+  Future&lt;void&gt; connect() async {
+    print('Connecting to $url');
+  }
+  
+  Future&lt;void&gt; disconnect() async {
+    print('Disconnecting from $url');
+  }
+}
+
+class Logger {
+  void log(String message) =&gt; print('[LOG] $message');
+}
+</code></pre>
+<h3 id="pattern-3-factory-method-pods">Pattern 3: Factory Method Pods</h3>
+<pre class="language-dart"><code class="language-dart">import 'package:jetleaf_pod/jetleaf_pod.dart';
+
+class DataSourceFactory {
+  static DataSource createDataSource(String databaseUrl) {
+    return DataSource(databaseUrl);
+  }
+}
+
+void main() {
+  final factory = DefaultListablePodFactory();
+
+  // Register pod created by factory method
+  factory.registerDefinition(
+    PodDefinition(
+      name: 'dataSource',
+      create: () =&gt; DataSourceFactory.createDataSource('postgres://localhost'),
+      scope: Scope.singleton,
+    ),
+  );
+
+  final dataSource = factory.getPod&lt;DataSource&gt;('dataSource');
+  print('DataSource: $dataSource');
+}
+
+class DataSource {
+  final String url;
+  DataSource(this.url);
+}
+</code></pre>
+<h2 id="-common-issues">⚠️ Common Issues</h2>
+<table>
+<thead>
+<tr>
+<th>Issue</th>
+<th>Cause</th>
+<th>Solution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pod not found</td>
+<td>Name mismatch or not registered</td>
+<td>Verify pod name matches registration</td>
+</tr>
+<tr>
+<td>Circular dependency</td>
+<td>Pod A depends on B, B depends on A</td>
+<td>Restructure to avoid cycles</td>
+</tr>
+<tr>
+<td>Wrong type retrieved</td>
+<td>Generic type mismatch</td>
+<td>Ensure registered and retrieved types match</td>
+</tr>
+<tr>
+<td>Initialization not called</td>
+<td>No initMethod specified</td>
+<td>Set <code>initMethod</code> in PodDefinition</td>
+</tr>
+<tr>
+<td>Memory leak</td>
+<td>Singleton not destroyed</td>
+<td>Call <code>factory.destroy()</code> on shutdown</td>
+</tr>
+</tbody>
+</table>
+<h2 id="-best-practices">📋 Best Practices</h2>
+<h3 id="-do">✅ DO</h3>
+<ul>
+<li>Use singleton scope for stateless services</li>
+<li>Use prototype scope for request-specific objects</li>
+<li>Register pods during application startup</li>
+<li>Use meaningful pod names</li>
+<li>Implement lifecycle methods for resources</li>
+<li>Call <code>factory.destroy()</code> on application shutdown</li>
+<li>Register pods centrally in configuration methods</li>
+<li>Use type-safe <code>getPod&lt;T&gt;()</code> when possible</li>
+</ul>
+<h3 id="-dont">❌ DON'T</h3>
+<ul>
+<li>Create manual singletons instead of using pod factory</li>
+<li>Hold strong references to factory in pods (use dependency injection)</li>
+<li>Register too many prototype-scoped pods</li>
+<li>Forget to call destroy methods</li>
+<li>Create circular dependencies</li>
+<li>Change pod definitions after startup</li>
+<li>Use positional parameters without names</li>
+</ul>
+<h2 id="-dependencies">📦 Dependencies</h2>
+<ul>
+<li><strong><code>jetleaf_lang</code></strong> — Language utilities</li>
+<li><strong><code>jetleaf_logging</code></strong> — Logging support</li>
+<li><strong><code>jetleaf_convert</code></strong> — Type conversion</li>
+<li><strong><code>jetleaf_utils</code></strong> — Utility functions</li>
+<li><strong><code>jetleaf_env</code></strong> — Configuration support</li>
+</ul>
+<h2 id="-related-packages">🔗 Related Packages</h2>
+<ul>
+<li><strong><code>jetleaf_core</code></strong> — Uses pods for DI</li>
+<li><strong><code>jetleaf_web</code></strong> — Pod-based HTTP handling</li>
+<li><strong><code>jetleaf_resource</code></strong> — Pod-managed resources</li>
+</ul>
+<h2 id="-license">📄 License</h2>
+<p>This package is part of the JetLeaf Framework. See LICENSE in the root directory.</p>
+<h2 id="-support">📞 Support</h2>
+<p>For issues, questions, or contributions, visit:</p>
+<ul>
+<li><a href="https://github.com/jetleaf/jetleaf_pod/issues">GitHub Issues</a></li>
+<li><a href="https://jetleaf.hapnium.com/docs/pod">Documentation</a></li>
+<li><a href="https://forum.jetleaf.hapnium.com">Community Forum</a></li>
+</ul>
+<hr>
+<p><strong>Created with ❤️ by <a href="https://hapnium.com">Hapnium</a></strong></p>
+</section>
+
+
+      <section class="summary">
+          <h2>Libraries</h2>
+        <dl>
+          <dt id="pod">
+  <span class="name"><a href="pod/">pod</a></span> 
+
+</dt>
+<dd>🫘 A lightweight, modular dependency injection (DI) and inversion-of-control (IoC) library.
+</dd>
+
+        </dl>
+      </section>
+  </div> <!-- /.main-content -->
+  <div id="dartdoc-sidebar-left" class="sidebar sidebar-offcanvas-left">
+    <!-- The search input and breadcrumbs below are only responsively visible at low resolutions. -->
+<header id="header-search-sidebar" class="hidden-l">
+  <form class="search-sidebar" role="search">
+    <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+<ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+    <li><a href="https://jetleaf.hapnium.com">jetleaf_pod package</a></li>
+</ol>
+
+    <h5 class="hidden-xs"><span class="package-name">jetleaf_pod</span> <span class="package-kind">package</span></h5>
+    <ol>
+      <li class="section-title">Libraries</li>
+      <li><a href="pod/">pod</a></li>
+</ol>
+
+  </div>
+  <div id="dartdoc-sidebar-right" class="sidebar sidebar-offcanvas-right">
+  </div>
+</main>
+<footer>
+  <span class="no-break">
+    jetleaf_pod
+      1.0.0+2
+  </span>
+  
+</footer>
+
+
+<script src="static-assets/highlight.pack.js?v1"></script>
+<script src="static-assets/docs.dart.js"></script>
+
+</body>
+</html>
+

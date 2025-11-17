@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="description" content="API docs for the containsType method from the DefaultListablePodFactory class, for the Dart programming language.">
+  <title>containsType method - DefaultListablePodFactory class - pod library - Dart API</title>
+
+
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../../static-assets/github.css?v1">
+  <link rel="stylesheet" href="../../static-assets/styles.css?v1">
+  <link rel="icon" href="../../static-assets/favicon.png?v1">
+  
+</head>
+
+<body data-base-href="../../" data-using-base-href="false" class="light-theme">
+<div id="overlay-under-drawer"></div>
+<header id="title">
+  <span id="sidenav-left-toggle" class="material-symbols-outlined" role="button" tabindex="0">menu</span>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod.dart</a></li>
+    <li><a href="../../pod/DefaultListablePodFactory-class.html">DefaultListablePodFactory</a></li>
+    <li class="self-crumb">containsType method</li>
+  </ol>
+  <div class="self-name">containsType</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+  <button class="toggle" id="theme-button" title="Toggle between light and dark mode" aria-label="Light and dark mode toggle">
+    <span id="dark-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      dark_mode
+    </span>
+    <span id="light-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      light_mode
+    </span>
+  </button>
+</header>
+<main>
+<div
+    id="dartdoc-main-content"
+    class="main-content"
+    data-above-sidebar="pod&#47;DefaultListablePodFactory-class-sidebar.html"
+    data-below-sidebar="">
+    <div>
+<h1><span class="kind-method">containsType</span> method 
+</h1></div>
+
+    <section class="multi-line-signature">
+      
+  <div>
+    <ol class="annotation-list">
+        <li>@<a href="https://api.dart.dev/stable/3.9.2/dart-core/override-constant.html">override</a></li>
+    </ol>
+  </div>
+<span class="returntype"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Future-class.html">Future</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a></span>&gt;</span></span>
+<span class="name ">containsType</span>(<wbr><ol class="parameter-list single-line"> <li><span class="parameter" id="containsType-param-requestedType"><span class="type-annotation">Class</span> <span class="parameter-name">requestedType</span>, [</span></li>
+<li><span class="parameter" id="containsType-param-allowPodProviderInit"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a></span> <span class="parameter-name">allowPodProviderInit</span> = <span class="default-value">false</span></span></li>
+</ol>])
+
+      <div class="features"><span class="feature">override</span></div>
+
+    </section>
+    
+<section class="desc markdown">
+  <p>Checks if the factory contains a pod of the specified type.</p>
+<p>This method is useful for checking the availability of a pod
+before attempting to retrieve it.</p>
+<h2 id="usage-example">Usage Example:</h2>
+<pre class="language-dart"><code class="language-dart">if (await factory.containsType(Class&lt;UserService&gt;())) {
+  final userService = await factory.getPod&lt;UserService&gt;('userService');
+  userService.doSomething();
+}
+</code></pre>
+<p>@param type The class type of the pod to check
+@return A Future that completes with true if the pod exists</p>
+</section>
+
+
+    
+<section class="summary source-code" id="source">
+  <h2><span>Implementation</span></h2>
+  <pre class="language-dart"><code class="language-dart">@override
+Future&lt;bool&gt; containsType(Class requestedType, [bool allowPodProviderInit = false]) async {
+  &#47;&#47; 1) Fast path: check all cached singletons
+  final singletonNames = getSingletonNames(); &#47;&#47; Iterable&lt;String&gt;
+  for (final name in singletonNames) {
+    final holder = await getSingletonCache(name, false);
+    if (holder == null) continue;
+    final holderType = holder.getType()?.getType();
+    if (holderType == NullablePod.CLASS.getType()) continue; &#47;&#47; ignored placeholder
+
+    final instance = holder.getValue();
+
+    &#47;&#47; 1.a) If instance is a PodProvider
+    if (instance is PodProvider) {
+      &#47;&#47; If provider itself would satisfy requestedType (e.g. requestedType is PodProvider or compatible)
+      if (instance.supportsType(requestedType)) {
+        return true;
+      }
+
+      &#47;&#47; Try to determine what the provider produces (may instantiate provider if allowed)
+      final produced = await getPodProviderType(instance, allowPodProviderInit);
+      if (produced != null &amp;&amp; requestedType.isAssignableFrom(produced)) {
+        return true;
+      }
+
+      &#47;&#47; If requestedType has generics, consult local definition metadata (if available)
+      if (requestedType.hasGenerics() &amp;&amp; containsDefinition(name)) {
+        final merged = getLocalMergedPodDefinition(name);
+        final Class declared = merged.type;
+        if (POD_PROVIDER_CLASS.isAssignableFrom(declared)) {
+          &#47;&#47; If requested type is not a provider, try matching component type
+          if (!POD_PROVIDER_CLASS.isAssignableFrom(requestedType) &amp;&amp; !requestedType.isAssignableFrom(declared)) {
+            final comp = declared.componentType();
+            if (comp != null &amp;&amp; requestedType.isAssignableFrom(comp)) {
+              return true;
+            }
+          }
+        } else {
+          if (requestedType.isAssignableFrom(declared)) return true;
+        }
+      }
+
+      &#47;&#47; Not matched by this provider instance
+      continue;
+    }
+
+    &#47;&#47; 1.b) If instance is not a provider
+    if (requestedType.isInstance(instance)) {
+      return true;
+    }
+
+    &#47;&#47; For generics, consult the local definition if exists
+    if (requestedType.hasGenerics() &amp;&amp; containsDefinition(name)) {
+      final def = getLocalMergedPodDefinition(name);
+      final Class declared = def.type;
+      if (!declared.isInstance(instance)) {
+        final Class? comp = requestedType.componentType();
+        if (comp != null &amp;&amp; !comp.isInstance(instance)) {
+          &#47;&#47; instance doesn&#39;t match component type -&gt; continue searching
+          continue;
+        }
+        if (requestedType.isAssignableFrom(declared)) return true;
+      } else {
+        if (requestedType.isAssignableFrom(declared)) return true;
+      }
+    }
+  } &#47;&#47; end singletons loop
+
+  &#47;&#47; 2) Check local PodDefinitions (declarations) even if not instantiated yet
+  final localNames = getDefinitionNames();
+  for (final name in localNames) {
+    final def = getLocalMergedPodDefinition(name);
+
+    &#47;&#47; 2.a) Declared type directly matches
+    final Class declaredType = def.type;
+    if (requestedType.isAssignableFrom(declaredType)) {
+      return true;
+    }
+
+    &#47;&#47; 2.b) If declared type is a PodProvider, check provided type metadata first
+    if (POD_PROVIDER_CLASS.isAssignableFrom(declaredType)) {
+      &#47;&#47; If the definition exposes providedType metadata, prefer that
+      final Class providedFromDef = def.type; &#47;&#47; optional metadata; null if unknown
+      if (requestedType.isAssignableFrom(providedFromDef)) {
+        return true;
+      }
+
+      &#47;&#47; If allowed, instantiate provider to inspect produced type
+      if (allowPodProviderInit) {
+        try {
+          final providerInstance = await getPod(name, []);
+          if (providerInstance is PodProvider) {
+            final Class? produced = await getPodProviderType(providerInstance, true);
+            if (produced != null &amp;&amp; requestedType.isAssignableFrom(produced)) {
+              return true;
+            }
+          }
+        } catch (_) {
+          &#47;&#47; ignore provider instantiation failures and continue scanning others
+        }
+      }
+
+      &#47;&#47; For generics, check component type on declared provider
+      if (requestedType.hasGenerics()) {
+        final Class? declaredComp = declaredType.componentType();
+        final Class? wantedComp = requestedType.componentType();
+        if (declaredComp != null &amp;&amp; wantedComp != null &amp;&amp; wantedComp.isAssignableFrom(declaredComp)) {
+          return true;
+        }
+      }
+
+      &#47;&#47; continue checking other definitions
+      continue;
+    }
+
+    &#47;&#47; 2.c) Generics: check component&#47;generic compatibility between requestedType and declaredType
+    if (requestedType.hasGenerics()) {
+      final Class? declaredComp = declaredType.componentType();
+      final Class? wantedComp = requestedType.componentType();
+      if (declaredComp != null &amp;&amp; wantedComp != null &amp;&amp; wantedComp.isAssignableFrom(declaredComp)) {
+        return true;
+      }
+    }
+  } &#47;&#47; end local definitions loop
+
+  &#47;&#47; 3) Delegate to parent factory if present
+  final parent = getParentFactory();
+  if (parent != null) {
+    try {
+      return await parent.containsType(requestedType, allowPodProviderInit);
+    } catch (_) {
+      &#47;&#47; If parent lookup errors, treat as no match (robust fallback)
+      return false;
+    }
+  }
+
+  &#47;&#47; 4) Nothing matched
+  return false;
+}</code></pre>
+</section>
+
+
+  </div> <!-- /.main-content -->
+  <div id="dartdoc-sidebar-left" class="sidebar sidebar-offcanvas-left">
+    <!-- The search input and breadcrumbs below are only responsively visible at low resolutions. -->
+<header id="header-search-sidebar" class="hidden-l">
+  <form class="search-sidebar" role="search">
+    <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+<ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod</a></li>
+    <li><a href="../../pod/DefaultListablePodFactory-class.html">DefaultListablePodFactory</a></li>
+    <li class="self-crumb">containsType method</li>
+</ol>
+
+    <h5>DefaultListablePodFactory class</h5>
+    <div id="dartdoc-sidebar-left-content"></div>
+  </div><!--/.sidebar-offcanvas-->
+  <div id="dartdoc-sidebar-right" class="sidebar sidebar-offcanvas-right">
+</div><!--/.sidebar-offcanvas-->
+</main>
+<footer>
+  <span class="no-break">
+    jetleaf_pod
+      1.0.0+2
+  </span>
+  
+</footer>
+
+
+<script src="../../static-assets/highlight.pack.js?v1"></script>
+<script src="../../static-assets/docs.dart.js"></script>
+
+</body>
+</html>
+

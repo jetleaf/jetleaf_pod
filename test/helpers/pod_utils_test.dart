@@ -67,12 +67,11 @@ class _FakeHierarchicalPodFactory extends _FakeListablePodFactory implements Hie
 
   _FakeHierarchicalPodFactory({
     this.parent,
-    Map<Class, List<String>>? namesByType,
-    Map<Class, Map<String, Object>>? podsByType,
-    Map<Class, List<String>>? namesByAnnotation,
+    super.namesByType,
+    super.podsByType,
+    super.namesByAnnotation,
     Set<String>? localNames,
-  })  : _localNames = localNames ?? <String>{},
-        super(namesByType: namesByType, podsByType: podsByType, namesByAnnotation: namesByAnnotation);
+  })  : _localNames = localNames ?? <String>{};
 
   @override
   PodFactory? getParentFactory() => parent;

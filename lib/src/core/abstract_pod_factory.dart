@@ -16,7 +16,6 @@ import 'dart:async';
 
 import 'package:jetleaf_convert/convert.dart';
 import 'package:jetleaf_lang/lang.dart';
-import 'package:jetleaf_logging/logging.dart';
 import 'package:meta/meta.dart';
 
 import '../definition/commons.dart';
@@ -79,13 +78,9 @@ import 'pod_factory.dart';
 /// - [ConfigurablePodFactory] for configuration methods
 /// - [PodScope] for scope implementations
 /// {@endtemplate}
-abstract class AbstractPodFactory extends AbstractPodProviderFactory
-    implements ConfigurablePodFactory {
+abstract class AbstractPodFactory extends AbstractPodProviderFactory implements ConfigurablePodFactory {
   /// Constant used to denote the startup step for pod instantiation in the abstract pod provider.
   static const String STARTUP_STEP_INSTANTIATE_POD = 'jetleaf*pod*instantiate';
-
-  /// Logger instance for tracking pod factory operations, errors, and diagnostic information.
-  final Log _logger = LogFactory.getLog(AbstractPodFactory);
 
   /// Parent pod factory for hierarchical pod lookup and dependency resolution.
   PodFactory? _parentPodFactory;
@@ -281,7 +276,7 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory
   @override
   void addPodProcessor(PodProcessor processor) {
     if (logger.getIsTraceEnabled()) {
-      logger.trace("Adding pod aware processor ${processor.runtimeType} to ${runtimeType}");
+      logger.trace("Adding pod aware processor ${processor.runtimeType} to $runtimeType");
     }
 
     _removePodProcessor(processor);
@@ -620,13 +615,13 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory
   void destroyScopedPod(String name) {
     RootPodDefinition root = getLocalMergedPodDefinition(name);
     if (root.scope.isSingleton || root.scope.isPrototype) {
-      throw new IllegalArgumentException("Pod name '$name' does not correspond to an object in a mutable scope");
+      throw IllegalArgumentException("Pod name '$name' does not correspond to an object in a mutable scope");
     }
 
     String scopeName = root.scope.type;
     PodScope? scope = _scopes.get(scopeName);
     if (scope == null) {
-      throw new IllegalStateException("No Scope SPI registered for scope name '$scopeName'");
+      throw IllegalStateException("No Scope SPI registered for scope name '$scopeName'");
     }
 
     Object? pod = scope.remove(name);
@@ -766,25 +761,8 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory
       // If declaredType is a PodProvider, check the provider's produced type (without instantiating provider unless allowed)
       if (POD_PROVIDER_CLASS.isAssignableFrom(declaredType)) {
         // If we can determine produced type from the definition metadata, prefer that.
-        final Class? declaredProvided = def.type;
-        if (declaredProvided != null) {
-          return typeToMatch.isAssignableFrom(declaredProvided);
-        }
-
-        // If no metadata available and we are allowed to init provider, try instantiating provider to inspect
-        if (allowPodProviderInit) {
-          try {
-            final providerInstance = await getPod(transformed, []);
-            if (providerInstance is PodProvider) {
-              final produced = await getPodProviderType(providerInstance, true);
-              if (produced != null && typeToMatch.isAssignableFrom(produced)) {
-                return true;
-              }
-            }
-          } catch (_) {
-            // ignore; fall through to parent check
-          }
-        }
+        final Class declaredProvided = def.type;
+        return typeToMatch.isAssignableFrom(declaredProvided);
       }
 
       // Not matched by local definition
@@ -973,7 +951,7 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory
       return null;
     }
 
-    PodScope? scope = null;
+    PodScope? scope;
     if (podDefinition != null) {
       String scopeName = podDefinition.scope.type;
       scope = getRegisteredScope(scopeName);
@@ -1097,7 +1075,7 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory
   /// Returns `true` if the pod has already been created, `false` otherwise
   /// {@endtemplate}
   @protected
-  bool hasStartedCreatingPod() => !_alreadyCreated.isEmpty;
+  bool hasStartedCreatingPod() => _alreadyCreated.isNotEmpty;
 
   /// {@template abstract_pod_factory_cache_merged_pod_definition}
   /// Caches a merged pod definition for a given pod name.
@@ -1246,7 +1224,7 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory
   /// {@endtemplate}
   @protected
   Future<bool> requiresDestruction(Object pod, RootPodDefinition root) async {
-    bool notNullable = root.type != NullablePod;
+    bool notNullable = root.type != NullablePod.CLASS;
     bool hasProcessors = hasPodDestructionProcessors() && await DisposableLifecycleManager.hasApplicableProcessors(pod, root, _destructionPodProcessors);
 
     return notNullable && (DisposableLifecycleManager.hasDestroyMethod(pod, root) || hasProcessors);
@@ -1277,7 +1255,7 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory
         // A pod with a custom scope...
         final scope = _scopes.get(root.scope.type);
         if (scope == null) {
-          throw new IllegalStateException("No Scope registered for scope name '${root.scope.type}'");
+          throw IllegalStateException("No Scope registered for scope name '${root.scope.type}'");
         }
 
         scope.registerDestructionCallback(name, handler);
@@ -1318,11 +1296,11 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory
     Object? shared = cache?.getValue();
 
     if (shared != null && args == null && cache != null) {
-      if (_logger.getIsTraceEnabled()) {
+      if (logger.getIsTraceEnabled()) {
         if (isCurrentlyCreatingSingleton(transformed)) {
-          _logger.trace("Returning eagerly cached instance of singleton pod '$transformed' that is not fully initialized yet - a consequence of a circular reference");
+          logger.trace("Returning eagerly cached instance of singleton pod '$transformed' that is not fully initialized yet - a consequence of a circular reference");
         } else {
-          _logger.trace("Returning cached instance of singleton pod '$transformed'");
+          logger.trace("Returning cached instance of singleton pod '$transformed'");
         }
       }
 
@@ -1428,7 +1406,7 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory
 
           // Create pod instance
           if (merged.scope.isSingleton && !prototypeInSingleton) {
-            final create = () async {
+            Future<ObjectHolder<Object>> create() async {
               try {
                 return ObjectHolder(
                   await doCreate(transformed, merged, args),
@@ -1442,7 +1420,7 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory
                 destroySingleton(transformed);
                 rethrow;
               }
-            };
+            }
 
             final creator = SimpleObjectFactory<Object>(([args]) async => create());
             shared = await getSingleton(transformed, factory: creator);
@@ -1478,7 +1456,7 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory
                 throw PodException('No Scope registered for scope name: $scopeName');
               } else {
                 try {
-                  final create = () async {
+                  Future<ObjectHolder<Object>> create() async {
                     beforePrototypeCreation(transformed);
 
                     try {
@@ -1490,7 +1468,7 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory
                     } finally {
                       afterPrototypeCreation(transformed);
                     }
-                  };
+                  }
 
                   final result = await scope.get(transformed, SimpleObjectFactory(([args]) async => create()));
                   shared = result.getValue();
@@ -1572,15 +1550,15 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory
 
       Object? po;
       if (definition == null) {
-        final nullable = await getNullableProviderObject(transformed);
+        final nullable = getNullableProviderObject(transformed);
         if (nullable != null) {
           po = nullable.getValue();
         }
       }
 
       if (po == null) {
-        if (definition == null && await containsDefinition(transformed)) {
-          definition = await getLocalMergedPodDefinition(transformed);
+        if (definition == null && containsDefinition(transformed)) {
+          definition = getLocalMergedPodDefinition(transformed);
         }
 
         if (definition != null) {
@@ -1619,7 +1597,7 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory
         if (cls.isInstance(pod)) {
           sourceType = cls;
         }
-      } catch (ex) {}
+      } catch (_) {}
     }
 
     if (type != null && !type.isInstance(pod)) {
@@ -1635,8 +1613,8 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory
 
         return convertedPod as T;
       } on TypeError catch (ex) {
-        if (_logger.getIsTraceEnabled()) {
-          _logger.trace("Failed to convert pod '$name' to required type '${type.getSimpleName()}'", error: ex);
+        if (logger.getIsTraceEnabled()) {
+          logger.trace("Failed to convert pod '$name' to required type '${type.getSimpleName()}'", error: ex);
         }
 
         throw PodNotOfRequiredTypeException(name: name, requiredType: pod.getClass(), actualType: type);

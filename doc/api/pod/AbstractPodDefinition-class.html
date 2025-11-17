@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="description" content="API docs for the AbstractPodDefinition class from the pod library, for the Dart programming language.">
+  <title>AbstractPodDefinition class - pod library - Dart API</title>
+
+
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../static-assets/github.css?v1">
+  <link rel="stylesheet" href="../static-assets/styles.css?v1">
+  <link rel="icon" href="../static-assets/favicon.png?v1">
+  
+</head>
+
+<body data-base-href="../" data-using-base-href="false" class="light-theme">
+<div id="overlay-under-drawer"></div>
+<header id="title">
+  <span id="sidenav-left-toggle" class="material-symbols-outlined" role="button" tabindex="0">menu</span>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li><a href="../index.html">jetleaf_pod</a></li>
+    <li><a href="../pod/">pod.dart</a></li>
+    <li class="self-crumb">AbstractPodDefinition class</li>
+  </ol>
+  <div class="self-name">AbstractPodDefinition</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+  <button class="toggle" id="theme-button" title="Toggle between light and dark mode" aria-label="Light and dark mode toggle">
+    <span id="dark-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      dark_mode
+    </span>
+    <span id="light-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      light_mode
+    </span>
+  </button>
+</header>
+<main>
+<div
+    id="dartdoc-main-content"
+    class="main-content"
+    data-above-sidebar="pod&#47;pod-library-sidebar.html"
+    data-below-sidebar="pod&#47;AbstractPodDefinition-class-sidebar.html">
+    <div>
+<h1><span class="kind-class">AbstractPodDefinition</span> class 
+    <a href="https://dart.dev/language/class-modifiers#abstract" class="feature feature-abstract" title="This type can not be directly constructed.">abstract</a>
+ 
+</h1></div>
+
+    
+<section class="desc markdown">
+  <p>An abstract base class for pod definitions that extends <a href="../pod/PodDefinition-class.html">PodDefinition</a>.</p>
+<p><a href="../pod/AbstractPodDefinition-class.html">AbstractPodDefinition</a> adds mutable state and utility methods
+to support advanced features such as:</p>
+<ul>
+<li>Tracking whether a pod definition is <strong>stale</strong></li>
+<li>Marking whether a pod is a <strong>provider (factory)</strong> of other pods</li>
+<li>Attaching a <a href="../pod/PodExpression-class.html">PodExpression</a> to represent its creation logic</li>
+<li>Checking whether lifecycle methods like <code>destroy</code> exist</li>
+</ul>
+<p>Typically, concrete pod definitions (e.g., <code>RootPodDefinition</code>)
+extend this class to customize behavior while leveraging the
+shared mutability features.</p>
+<h3 id="example">Example</h3>
+<pre class="language-dart"><code class="language-dart">class RootPodDefinition extends AbstractPodDefinition {
+  RootPodDefinition() : super(name: "root", type: Class&lt;OtherService&gt;());
+}
+
+final rootDef = RootPodDefinition();
+rootDef.setIsStale(true);
+
+if (rootDef.getIsStale()) {
+  print("Pod definition needs re-evaluation");
+}
+
+rootDef.setIsPodProvider(true);
+print(rootDef.getIsPodProvider()); // true
+</code></pre>
+</section>
+
+
+    <section>
+      <dl class="dl-horizontal">
+        
+  <dt>Inheritance</dt>
+  <dd>
+    <ul class="gt-separated dark clazz-relationships">
+      <li><a href="https://api.dart.dev/stable/3.9.2/dart-core/Object-class.html">Object</a></li>
+        <li><a href="../pod/PodDefinition-class.html">PodDefinition</a></li>
+      <li>AbstractPodDefinition</li>
+    </ul>
+  </dd>
+
+        
+        
+
+          <dt>Implementers</dt>
+          <dd><ul class="comma-separated clazz-relationships">
+              <li><a href="../pod/RootPodDefinition-class.html">RootPodDefinition</a></li>
+          </ul></dd>
+
+        
+        
+
+
+      </dl>
+    </section>
+
+    
+  <section class="summary offset-anchor" id="constructors">
+    <h2>Constructors</h2>
+    <dl class="constructor-summary-list">
+        <dt id="AbstractPodDefinition.new" class="callable">
+          <span class="name"><a href="../pod/AbstractPodDefinition/AbstractPodDefinition.html">AbstractPodDefinition.new</a></span><span class="signature">({<span class="parameter" id="-param-type"><span>required</span> <span class="type-annotation">Class</span> <span class="parameter-name">type</span>, </span><span class="parameter" id="-param-instance"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Object-class.html">Object</a>?</span> <span class="parameter-name">instance</span>, </span><span class="parameter" id="-param-resolvedDestroyMethodName"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a>?</span> <span class="parameter-name">resolvedDestroyMethodName</span></span>})</span>
+        </dt>
+        <dd>
+          Creates an <a href="../pod/AbstractPodDefinition-class.html">AbstractPodDefinition</a> with a given <a href="../pod/PodDefinition/name.html">name</a> and <code>type</code>.
+        </dd>
+    </dl>
+  </section>
+    
+  <section
+      class="summary offset-anchor"
+      id="instance-properties">
+    <h2>Properties</h2>
+    <dl class="properties">
+        <dt id="annotatedClasses" class="property inherited">
+  <span class="name"><a href="../pod/PodDefinition/annotatedClasses.html">annotatedClasses</a></span>
+  <span class="signature">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/List-class.html">List</a><span class="signature">&lt;<wbr><span class="type-parameter">Class</span>&gt;</span></span>
+  
+
+</dt>
+<dd class="inherited">
+  The list of annotation classes which the <a href="../pod/PodDefinition/type.html">type</a> of this pod definition is annotated with.
+  <div class="features"><span class="feature">final</span><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="annotations" class="property inherited">
+  <span class="name"><a href="../pod/PodDefinition/annotations.html">annotations</a></span>
+  <span class="signature">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/List-class.html">List</a><span class="signature">&lt;<wbr><span class="type-parameter">Annotation</span>&gt;</span></span>
+  
+
+</dt>
+<dd class="inherited">
+  The complete list of annotations discovered on the class
+and its meta-annotations.
+  <div class="features"><span class="feature">final</span><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="autowireCandidate" class="property inherited">
+  <span class="name"><a href="../pod/PodDefinition/autowireCandidate.html">autowireCandidate</a></span>
+  <span class="signature">&#8596; <a href="../pod/AutowireCandidateDescriptor-class.html">AutowireCandidateDescriptor</a></span>
+  
+
+</dt>
+<dd class="inherited">
+  Defines whether this pod is eligible for autowiring.
+  <div class="features"><span class="feature">getter/setter pair</span><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="canProxy" class="property inherited">
+  <span class="name"><a href="../pod/PodDefinition/canProxy.html">canProxy</a></span>
+  <span class="signature">&#8596; <a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a></span>
+  
+
+</dt>
+<dd class="inherited">
+  Whether this pod is eligible for proxying.
+  <div class="features"><span class="feature">getter/setter pair</span><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="dependencyCheck" class="property inherited">
+  <span class="name"><a href="../pod/PodDefinition/dependencyCheck.html">dependencyCheck</a></span>
+  <span class="signature">&#8596; <a href="../pod/DependencyCheck.html">DependencyCheck</a></span>
+  
+
+</dt>
+<dd class="inherited">
+  Defines the dependency validation strategy.
+  <div class="features"><span class="feature">getter/setter pair</span><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="dependsOn" class="property inherited">
+  <span class="name"><a href="../pod/PodDefinition/dependsOn.html">dependsOn</a></span>
+  <span class="signature">&#8596; <a href="https://api.dart.dev/stable/3.9.2/dart-core/List-class.html">List</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="../pod/DependencyDesign-class.html">DependencyDesign</a></span>&gt;</span></span>
+  
+
+</dt>
+<dd class="inherited">
+  Other dependencies that this pod depends on.
+  <div class="features"><span class="feature">getter/setter pair</span><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="description" class="property inherited">
+  <span class="name"><a href="../pod/PodDefinition/description.html">description</a></span>
+  <span class="signature">&#8596; <a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a>?</span>
+  
+
+</dt>
+<dd class="inherited">
+  A description of the pod.
+  <div class="features"><span class="feature">getter/setter pair</span><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="design" class="property inherited">
+  <span class="name"><a href="../pod/PodDefinition/design.html">design</a></span>
+  <span class="signature">&#8596; <a href="../pod/DesignDescriptor-class.html">DesignDescriptor</a></span>
+  
+
+</dt>
+<dd class="inherited">
+  Defines the design role of the pod.
+  <div class="features"><span class="feature">getter/setter pair</span><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="executableArgumentValues" class="property inherited">
+  <span class="name"><a href="../pod/PodDefinition/executableArgumentValues.html">executableArgumentValues</a></span>
+  <span class="signature">&#8596; <a href="../pod/ConstructorArgumentValues-class.html">ConstructorArgumentValues</a></span>
+  
+
+</dt>
+<dd class="inherited">
+  Arguments to be passed to the pod’s constructor.
+  <div class="features"><span class="feature">getter/setter pair</span><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="factoryMethod" class="property inherited">
+  <span class="name"><a href="../pod/PodDefinition/factoryMethod.html">factoryMethod</a></span>
+  <span class="signature">&#8596; <a href="../pod/FactoryMethodDesign-class.html">FactoryMethodDesign</a></span>
+  
+
+</dt>
+<dd class="inherited">
+  The factory method used to create this pod.
+  <div class="features"><span class="feature">getter/setter pair</span><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="hasBeforeInstantiationResolved" class="property inherited">
+  <span class="name"><a href="../pod/PodDefinition/hasBeforeInstantiationResolved.html">hasBeforeInstantiationResolved</a></span>
+  <span class="signature">&#8596; <a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a></span>
+  
+
+</dt>
+<dd class="inherited">
+  Whether this pod has been resolved before instantiation.
+  <div class="features"><span class="feature">getter/setter pair</span><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="hashCode" class="property inherited">
+  <span class="name"><a href="../pod/PodDefinition/hashCode.html">hashCode</a></span>
+  <span class="signature">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/int-class.html">int</a></span>
+  
+
+</dt>
+<dd class="inherited">
+  The hash code for this object.
+  <div class="features"><span class="feature">no setter</span><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="instance" class="property">
+  <span class="name"><a href="../pod/AbstractPodDefinition/instance.html">instance</a></span>
+  <span class="signature">&#8596; <a href="https://api.dart.dev/stable/3.9.2/dart-core/Object-class.html">Object</a>?</span>
+  
+
+</dt>
+<dd>
+  The instance of the pod definition.
+  <div class="features"><span class="feature">getter/setter pair</span></div>
+
+</dd>
+
+        <dt id="isPodProvider" class="property inherited">
+  <span class="name"><a href="../pod/PodDefinition/isPodProvider.html">isPodProvider</a></span>
+  <span class="signature">&#8596; <a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a></span>
+  
+
+</dt>
+<dd class="inherited">
+  Whether this pod is a provider of other pods.
+  <div class="features"><span class="feature">getter/setter pair</span><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="lifecycle" class="property inherited">
+  <span class="name"><a href="../pod/PodDefinition/lifecycle.html">lifecycle</a></span>
+  <span class="signature">&#8596; <a href="../pod/LifecycleDesign-class.html">LifecycleDesign</a></span>
+  
+
+</dt>
+<dd class="inherited">
+  Defines the lifecycle behavior of the pod.
+  <div class="features"><span class="feature">getter/setter pair</span><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="name" class="property inherited">
+  <span class="name"><a href="../pod/PodDefinition/name.html">name</a></span>
+  <span class="signature">&#8596; <a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span>
+  
+
+</dt>
+<dd class="inherited">
+  The unique name of the pod (component).
+  <div class="features"><span class="feature">getter/setter pair</span><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="preferredConstructors" class="property inherited">
+  <span class="name"><a href="../pod/PodDefinition/preferredConstructors.html">preferredConstructors</a></span>
+  <span class="signature">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/List-class.html">List</a><span class="signature">&lt;<wbr><span class="type-parameter">Constructor</span>&gt;</span></span>
+  
+
+</dt>
+<dd class="inherited">
+  List of preferred constructors for autowiring.
+  <div class="features"><span class="feature">final</span><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="propertyValues" class="property inherited">
+  <span class="name"><a href="../pod/PodDefinition/propertyValues.html">propertyValues</a></span>
+  <span class="signature">&#8596; <a href="../pod/MutablePropertyValues-class.html">MutablePropertyValues</a></span>
+  
+
+</dt>
+<dd class="inherited">
+  Mutable property values assigned to this pod.
+  <div class="features"><span class="feature">getter/setter pair</span><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="resolvedDestroyMethodName" class="property">
+  <span class="name"><a href="../pod/AbstractPodDefinition/resolvedDestroyMethodName.html">resolvedDestroyMethodName</a></span>
+  <span class="signature">&#8596; <a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a>?</span>
+  
+
+</dt>
+<dd>
+  
+  <div class="features"><span class="feature">getter/setter pair</span></div>
+
+</dd>
+
+        <dt id="runtimeType" class="property inherited">
+  <span class="name"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Object/runtimeType.html">runtimeType</a></span>
+  <span class="signature">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/Type-class.html">Type</a></span>
+  
+
+</dt>
+<dd class="inherited">
+  A representation of the runtime type of the object.
+  <div class="features"><span class="feature">no setter</span><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="scope" class="property inherited">
+  <span class="name"><a href="../pod/PodDefinition/scope.html">scope</a></span>
+  <span class="signature">&#8596; <a href="../pod/ScopeDesign-class.html">ScopeDesign</a></span>
+  
+
+</dt>
+<dd class="inherited">
+  Defines the scope of the pod.
+  <div class="features"><span class="feature">getter/setter pair</span><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="type" class="property inherited">
+  <span class="name"><a href="../pod/PodDefinition/type.html">type</a></span>
+  <span class="signature">&#8596; Class</span>
+  
+
+</dt>
+<dd class="inherited">
+  The <code>Class</code> type that this pod represents.
+  <div class="features"><span class="feature">getter/setter pair</span><span class="feature">inherited</span></div>
+
+</dd>
+
+    </dl>
+  </section>
+
+    
+  <section
+      class="summary offset-anchor"
+      id="instance-methods">
+    <h2>Methods</h2>
+    <dl class="callables">
+        <dt id="clone" class="callable inherited">
+  <span class="name"><a href="../pod/PodDefinition/clone.html">clone</a></span><span class="signature">(<wbr>)
+    <span class="returntype parameter">&#8594; <a href="../pod/PodDefinition-class.html">PodDefinition</a></span>
+  </span>
+  
+
+</dt>
+<dd class="inherited">
+  Creates and returns a <strong>deep clone</strong> of this pod definition.
+  <div class="features"><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="equalizedProperties" class="callable">
+  <span class="name"><a href="../pod/AbstractPodDefinition/equalizedProperties.html">equalizedProperties</a></span><span class="signature">(<wbr>)
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/List-class.html">List</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Object-class.html">Object</a>?</span>&gt;</span></span>
+  </span>
+  
+
+</dt>
+<dd>
+  Mixin-style contract for value-based equality, <code>hashCode</code>, and <code>toString</code>.
+  <div class="features"><span class="feature">override</span></div>
+
+</dd>
+
+        <dt id="getAnnotation" class="callable inherited">
+  <span class="name"><a href="../pod/PodDefinition/getAnnotation.html">getAnnotation</a></span><span class="signature">&lt;<wbr><span class="type-parameter">A</span>&gt;</span><span class="signature">(<wbr>)
+    <span class="returntype parameter">&#8594; A?</span>
+  </span>
+  
+
+</dt>
+<dd class="inherited">
+  Returns the annotation of type <code>A</code>, if present.
+  <div class="features"><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="getAnnotations" class="callable inherited">
+  <span class="name"><a href="../pod/PodDefinition/getAnnotations.html">getAnnotations</a></span><span class="signature">&lt;<wbr><span class="type-parameter">A</span>&gt;</span><span class="signature">(<wbr>)
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/List-class.html">List</a><span class="signature">&lt;<wbr><span class="type-parameter">A</span>&gt;</span></span>
+  </span>
+  
+
+</dt>
+<dd class="inherited">
+  Returns a list of annotations of type <code>A</code>.
+  <div class="features"><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="getIsStale" class="callable">
+  <span class="name"><a href="../pod/AbstractPodDefinition/getIsStale.html">getIsStale</a></span><span class="signature">(<wbr>)
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a></span>
+  </span>
+  
+
+</dt>
+<dd>
+  Returns whether this pod definition is <strong>stale</strong>.
+  
+
+</dd>
+
+        <dt id="getPodExpression" class="callable">
+  <span class="name"><a href="../pod/AbstractPodDefinition/getPodExpression.html">getPodExpression</a></span><span class="signature">(<wbr>)
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/Object-class.html">Object</a>?</span>
+  </span>
+  
+
+</dt>
+<dd>
+  Returns the <a href="../pod/PodExpression-class.html">PodExpression</a> representing this pod’s creation logic.
+  
+
+</dd>
+
+        <dt id="hasAnnotation" class="callable inherited">
+  <span class="name"><a href="../pod/PodDefinition/hasAnnotation.html">hasAnnotation</a></span><span class="signature">&lt;<wbr><span class="type-parameter">A</span>&gt;</span><span class="signature">(<wbr>)
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a></span>
+  </span>
+  
+
+</dt>
+<dd class="inherited">
+  Returns <code>true</code> if this definition has an annotation of type <code>A</code>.
+  <div class="features"><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="hasConstructorArgumentValues" class="callable inherited">
+  <span class="name"><a href="../pod/PodDefinition/hasConstructorArgumentValues.html">hasConstructorArgumentValues</a></span><span class="signature">(<wbr>)
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a></span>
+  </span>
+  
+
+</dt>
+<dd class="inherited">
+  Returns whether this pod definition contains any
+<strong>constructor argument values</strong>.
+  <div class="features"><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="hasDestroyMethod" class="callable">
+  <span class="name"><a href="../pod/AbstractPodDefinition/hasDestroyMethod.html">hasDestroyMethod</a></span><span class="signature">(<wbr><span class="parameter" id="hasDestroyMethod-param-methodName"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span> <span class="parameter-name">methodName</span></span>)
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a></span>
+  </span>
+  
+
+</dt>
+<dd>
+  Checks whether this pod definition defines a <strong>destroy method</strong>
+with the given <code>methodName</code>.
+  
+
+</dd>
+
+        <dt id="hasPreferredConstructors" class="callable inherited">
+  <span class="name"><a href="../pod/PodDefinition/hasPreferredConstructors.html">hasPreferredConstructors</a></span><span class="signature">(<wbr>)
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a></span>
+  </span>
+  
+
+</dt>
+<dd class="inherited">
+  Returns whether this pod definition has any preferred constructors.
+  <div class="features"><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="hasPropertyValues" class="callable inherited">
+  <span class="name"><a href="../pod/PodDefinition/hasPropertyValues.html">hasPropertyValues</a></span><span class="signature">(<wbr>)
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a></span>
+  </span>
+  
+
+</dt>
+<dd class="inherited">
+  Returns whether this pod definition contains any
+<strong>property values</strong>.
+  <div class="features"><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="isAbstractAndNoFactory" class="callable inherited">
+  <span class="name"><a href="../pod/PodDefinition/isAbstractAndNoFactory.html">isAbstractAndNoFactory</a></span><span class="signature">(<wbr>)
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a></span>
+  </span>
+  
+
+</dt>
+<dd class="inherited">
+  Returns <code>true</code> if this definition is non-instantiable.
+  <div class="features"><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="noSuchMethod" class="callable inherited">
+  <span class="name"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Object/noSuchMethod.html">noSuchMethod</a></span><span class="signature">(<wbr><span class="parameter" id="noSuchMethod-param-invocation"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Invocation-class.html">Invocation</a></span> <span class="parameter-name">invocation</span></span>)
+    <span class="returntype parameter">&#8594; dynamic</span>
+  </span>
+  
+
+</dt>
+<dd class="inherited">
+  Invoked when a nonexistent method or property is accessed.
+  <div class="features"><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="setIsStale" class="callable">
+  <span class="name"><a href="../pod/AbstractPodDefinition/setIsStale.html">setIsStale</a></span><span class="signature">(<wbr><span class="parameter" id="setIsStale-param-value"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a></span> <span class="parameter-name">value</span></span>)
+    <span class="returntype parameter">&#8594; void</span>
+  </span>
+  
+
+</dt>
+<dd>
+  Marks this pod definition as <strong>stale</strong> or not.
+  
+
+</dd>
+
+        <dt id="setPodExpression" class="callable">
+  <span class="name"><a href="../pod/AbstractPodDefinition/setPodExpression.html">setPodExpression</a></span><span class="signature">(<wbr><span class="parameter" id="setPodExpression-param-podExpression"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Object-class.html">Object</a></span> <span class="parameter-name">podExpression</span></span>)
+    <span class="returntype parameter">&#8594; void</span>
+  </span>
+  
+
+</dt>
+<dd>
+  Attaches a <a href="../pod/PodExpression-class.html">PodExpression</a> representing this pod’s creation logic.
+  
+
+</dd>
+
+        <dt id="toString" class="callable inherited">
+  <span class="name"><a href="../pod/PodDefinition/toString.html">toString</a></span><span class="signature">(<wbr>)
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span>
+  </span>
+  
+
+</dt>
+<dd class="inherited">
+  A string representation of this object.
+  <div class="features"><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="toStringOptions" class="callable">
+  <span class="name"><a href="../pod/AbstractPodDefinition/toStringOptions.html">toStringOptions</a></span><span class="signature">(<wbr>)
+    <span class="returntype parameter">&#8594; ToStringOptions</span>
+  </span>
+  
+
+</dt>
+<dd>
+  
+  <div class="features"><span class="feature">override</span></div>
+
+</dd>
+
+    </dl>
+  </section>
+    
+  <section
+      class="summary offset-anchor inherited"
+      id="operators">
+    <h2>Operators</h2>
+    <dl class="callables">
+        <dt id="operator ==" class="callable inherited">
+  <span class="name"><a href="../pod/PodDefinition/operator_equals.html">operator ==</a></span><span class="signature">(<wbr><span class="parameter" id="==-param-other"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Object-class.html">Object</a></span> <span class="parameter-name">other</span></span>)
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a></span>
+  </span>
+  
+
+</dt>
+<dd class="inherited">
+  The equality operator.
+  <div class="features"><span class="feature">inherited</span></div>
+
+</dd>
+
+    </dl>
+  </section>
+    
+    
+    
+
+  </div> <!-- /.main-content -->
+  <div id="dartdoc-sidebar-left" class="sidebar sidebar-offcanvas-left">
+    <!-- The search input and breadcrumbs below are only responsively visible at low resolutions. -->
+<header id="header-search-sidebar" class="hidden-l">
+  <form class="search-sidebar" role="search">
+    <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+<ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+    <li><a href="../index.html">jetleaf_pod</a></li>
+    <li><a href="../pod/">pod</a></li>
+    <li class="self-crumb">AbstractPodDefinition class</li>
+</ol>
+
+    <h5>pod library</h5>
+    <div id="dartdoc-sidebar-left-content"></div>
+  </div>
+  <div id="dartdoc-sidebar-right" class="sidebar sidebar-offcanvas-right">
+  </div><!--/.sidebar-offcanvas-->
+</main>
+<footer>
+  <span class="no-break">
+    jetleaf_pod
+      1.0.0+2
+  </span>
+  
+</footer>
+
+
+<script src="../static-assets/highlight.pack.js?v1"></script>
+<script src="../static-assets/docs.dart.js"></script>
+
+</body>
+</html>
+

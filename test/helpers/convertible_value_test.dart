@@ -89,8 +89,7 @@ void main() {
 }
 
 class _TestConvertibleValue extends ConvertibleValue {
-  _TestConvertibleValue(Object? value, {String? packageName, String? qualifiedName}) 
-    : super(value, packageName: packageName, qualifiedName: qualifiedName);
+  _TestConvertibleValue(super.value, {super.packageName, super.qualifiedName});
 
   @override
   List<Object?> equalizedProperties() => [getValue(), getPackageName(), getQualifiedName()];

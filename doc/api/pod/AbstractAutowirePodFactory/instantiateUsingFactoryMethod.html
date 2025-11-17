@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="description" content="API docs for the instantiateUsingFactoryMethod method from the AbstractAutowirePodFactory class, for the Dart programming language.">
+  <title>instantiateUsingFactoryMethod method - AbstractAutowirePodFactory class - pod library - Dart API</title>
+
+
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../../static-assets/github.css?v1">
+  <link rel="stylesheet" href="../../static-assets/styles.css?v1">
+  <link rel="icon" href="../../static-assets/favicon.png?v1">
+  
+</head>
+
+<body data-base-href="../../" data-using-base-href="false" class="light-theme">
+<div id="overlay-under-drawer"></div>
+<header id="title">
+  <span id="sidenav-left-toggle" class="material-symbols-outlined" role="button" tabindex="0">menu</span>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod.dart</a></li>
+    <li><a href="../../pod/AbstractAutowirePodFactory-class.html">AbstractAutowirePodFactory</a></li>
+    <li class="self-crumb">instantiateUsingFactoryMethod method</li>
+  </ol>
+  <div class="self-name">instantiateUsingFactoryMethod</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+  <button class="toggle" id="theme-button" title="Toggle between light and dark mode" aria-label="Light and dark mode toggle">
+    <span id="dark-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      dark_mode
+    </span>
+    <span id="light-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      light_mode
+    </span>
+  </button>
+</header>
+<main>
+<div
+    id="dartdoc-main-content"
+    class="main-content"
+    data-above-sidebar="pod&#47;AbstractAutowirePodFactory-class-sidebar.html"
+    data-below-sidebar="">
+    <div>
+<h1><span class="kind-method">instantiateUsingFactoryMethod</span> method 
+</h1></div>
+
+    <section class="multi-line-signature">
+      
+  <div>
+    <ol class="annotation-list">
+        <li>@<a href="https://pub.dev/documentation/meta/1.17.0/meta/protected-constant.html">protected</a></li>
+    </ol>
+  </div>
+<span class="returntype"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Future-class.html">Future</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Object-class.html">Object</a></span>&gt;</span></span>
+<span class="name ">instantiateUsingFactoryMethod</span>(<wbr><ol class="parameter-list single-line"> <li><span class="parameter" id="instantiateUsingFactoryMethod-param-podName"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span> <span class="parameter-name">podName</span>, </span></li>
+<li><span class="parameter" id="instantiateUsingFactoryMethod-param-root"><span class="type-annotation"><a href="../../pod/RootPodDefinition-class.html">RootPodDefinition</a></span> <span class="parameter-name">root</span>, </span></li>
+<li><span class="parameter" id="instantiateUsingFactoryMethod-param-args"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/List-class.html">List</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="../../pod/ArgumentValue-class.html">ArgumentValue</a></span>&gt;</span>?</span> <span class="parameter-name">args</span></span></li>
+</ol>)
+
+      
+
+    </section>
+    
+<section class="desc markdown">
+  <p>Instantiates a pod using a factory method defined in the pod definition.</p>
+<p>@param podName The name of the pod
+@param root The pod definition containing factory method information
+@param args Optional arguments for the factory method
+@return The instance created by the factory method</p>
+</section>
+
+
+    
+<section class="summary source-code" id="source">
+  <h2><span>Implementation</span></h2>
+  <pre class="language-dart"><code class="language-dart">@protected
+Future&lt;Object&gt; instantiateUsingFactoryMethod(String podName, RootPodDefinition root, List&lt;ArgumentValue&gt;? args) async {
+  Object factoryInstance = await getPod(root.factoryMethod.podName, args);
+
+  final result = await _executableStrategy.determineFactoryMethod(root, podName, args);
+  final method = result.executable as Method;
+
+  try {
+    if (method.isStatic()) {
+      throw PodIsAbstractException(
+        &quot;Factory method &#39;${method.getName()}&#39; in pod &#39;${root.factoryMethod.podName}&#39; is static and cannot be invoked&quot;,
+        name: podName,
+      );
+    }
+
+    if (logger.getIsTraceEnabled()) {
+      logger.trace(
+        &quot;Instantiating pod &#39;$podName&#39; using factory method &#39;${method.getName()}&#39; &quot;
+        &quot;from pod &#39;${root.factoryMethod.podName}&#39; &quot;
+        &quot;with args: named=${result.namedArgs}, positional=${result.positionalArgs}&quot;,
+      );
+    }
+
+    return method.invoke(factoryInstance, result.namedArgs, result.positionalArgs);
+  } on PodException catch (e, st) {
+    if (logger.getIsTraceEnabled()) {
+      logger.trace(
+        &quot;Pod instantiation failed for &#39;$podName&#39; via factory method &#39;${method.getName()}&#39;: $e&quot;,
+        error: e,
+        stacktrace: st,
+      );
+    }
+
+    rethrow;
+  } catch (e, st) {
+    if (logger.getIsTraceEnabled()) {
+      logger.trace(
+        &quot;Unexpected error while instantiating pod &#39;$podName&#39; via factory method &#39;${method.getName()}&#39;: $e\n$st&quot;,
+        error: e,
+        stacktrace: st,
+      );
+    }
+
+    rethrow;
+  }
+}</code></pre>
+</section>
+
+
+  </div> <!-- /.main-content -->
+  <div id="dartdoc-sidebar-left" class="sidebar sidebar-offcanvas-left">
+    <!-- The search input and breadcrumbs below are only responsively visible at low resolutions. -->
+<header id="header-search-sidebar" class="hidden-l">
+  <form class="search-sidebar" role="search">
+    <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+<ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod</a></li>
+    <li><a href="../../pod/AbstractAutowirePodFactory-class.html">AbstractAutowirePodFactory</a></li>
+    <li class="self-crumb">instantiateUsingFactoryMethod method</li>
+</ol>
+
+    <h5>AbstractAutowirePodFactory class</h5>
+    <div id="dartdoc-sidebar-left-content"></div>
+  </div><!--/.sidebar-offcanvas-->
+  <div id="dartdoc-sidebar-right" class="sidebar sidebar-offcanvas-right">
+</div><!--/.sidebar-offcanvas-->
+</main>
+<footer>
+  <span class="no-break">
+    jetleaf_pod
+      1.0.0+2
+  </span>
+  
+</footer>
+
+
+<script src="../../static-assets/highlight.pack.js?v1"></script>
+<script src="../../static-assets/docs.dart.js"></script>
+
+</body>
+</html>
+

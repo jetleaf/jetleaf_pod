@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="description" content="API docs for the getExecutableStrategy method from the AbstractAutowirePodFactory class, for the Dart programming language.">
+  <title>getExecutableStrategy method - AbstractAutowirePodFactory class - pod library - Dart API</title>
+
+
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../../static-assets/github.css?v1">
+  <link rel="stylesheet" href="../../static-assets/styles.css?v1">
+  <link rel="icon" href="../../static-assets/favicon.png?v1">
+  
+</head>
+
+<body data-base-href="../../" data-using-base-href="false" class="light-theme">
+<div id="overlay-under-drawer"></div>
+<header id="title">
+  <span id="sidenav-left-toggle" class="material-symbols-outlined" role="button" tabindex="0">menu</span>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod.dart</a></li>
+    <li><a href="../../pod/AbstractAutowirePodFactory-class.html">AbstractAutowirePodFactory</a></li>
+    <li class="self-crumb">getExecutableStrategy method</li>
+  </ol>
+  <div class="self-name">getExecutableStrategy</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+  <button class="toggle" id="theme-button" title="Toggle between light and dark mode" aria-label="Light and dark mode toggle">
+    <span id="dark-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      dark_mode
+    </span>
+    <span id="light-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      light_mode
+    </span>
+  </button>
+</header>
+<main>
+<div
+    id="dartdoc-main-content"
+    class="main-content"
+    data-above-sidebar="pod&#47;AbstractAutowirePodFactory-class-sidebar.html"
+    data-below-sidebar="">
+    <div>
+<h1><span class="kind-method">getExecutableStrategy</span> method 
+</h1></div>
+
+    <section class="multi-line-signature">
+      
+<span class="returntype"><a href="../../pod/ExecutableStrategy-class.html">ExecutableStrategy</a></span>
+<span class="name ">getExecutableStrategy</span>(<wbr>)
+
+      
+
+    </section>
+    
+<section class="desc markdown">
+  <p><strong>Executable Strategy</strong></p>
+<p>Defines the contract for strategies that determine how a pod
+(instance) should be created by selecting an appropriate
+constructor or factory method.</p>
+<p>This abstraction allows the framework to support multiple
+instantiation policies (e.g., annotation-driven, autowiring,
+explicit argument matching).</p>
+<h1 id="purpose">Purpose</h1>
+<ul>
+<li>Encapsulates the logic of deciding <strong>which executable</strong> (constructor
+or factory method) to invoke when instantiating a pod.</li>
+<li>Provides flexibility so different strategies can be plugged in
+depending on framework configuration.</li>
+<li>Used internally by the <a href="../../pod/DefaultListablePodFactory-class.html">DefaultListablePodFactory</a> (or equivalents)
+during pod creation.</li>
+</ul>
+<h1 id="common-strategies">Common Strategies</h1>
+<ul>
+<li><strong>Default constructor strategy</strong>: Always selects the no-arg constructor.</li>
+<li><strong>Annotated strategy</strong>: Selects constructors/methods marked with a
+specific annotation (e.g., <code>@Inject</code>).</li>
+<li><strong>Autowiring strategy</strong>: Resolves arguments automatically from the
+dependency graph.</li>
+<li><strong>Explicit arguments strategy</strong>: Prefers explicitly provided arguments
+when available.</li>
+</ul>
+<h1 id="example-usage">Example Usage</h1>
+<pre class="language-dart"><code class="language-dart">final strategy = MyAnnotationBasedExecutableStrategy();
+final holder = await strategy.determineConstructor(
+  rootDef,
+  "myService",
+  rootDef.constructors,
+  [ArgumentValue.positional("db_connection")]
+);
+
+print(holder.executable);  // chosen constructor
+print(holder.arguments);   // resolved arguments
+</code></pre>
+<h1 id="notes-for-implementors">Notes for Implementors</h1>
+<ul>
+<li>Must return an <a href="../../pod/ExecutableHolder-class.html">ExecutableHolder</a> with both the chosen executable
+and its resolved arguments.</li>
+<li>Should fail fast with a clear error if no suitable constructor/factory
+can be determined.</li>
+<li>May use metadata (annotations, profiles, qualifiers) from
+<a href="../../pod/RootPodDefinition-class.html">RootPodDefinition</a> to guide selection.</li>
+</ul>
+<p>Returns the executable strategy used by this factory.</p>
+<p>@return The executable strategy</p>
+</section>
+
+
+    
+<section class="summary source-code" id="source">
+  <h2><span>Implementation</span></h2>
+  <pre class="language-dart"><code class="language-dart">ExecutableStrategy getExecutableStrategy() =&gt; _executableStrategy;</code></pre>
+</section>
+
+
+  </div> <!-- /.main-content -->
+  <div id="dartdoc-sidebar-left" class="sidebar sidebar-offcanvas-left">
+    <!-- The search input and breadcrumbs below are only responsively visible at low resolutions. -->
+<header id="header-search-sidebar" class="hidden-l">
+  <form class="search-sidebar" role="search">
+    <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+<ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod</a></li>
+    <li><a href="../../pod/AbstractAutowirePodFactory-class.html">AbstractAutowirePodFactory</a></li>
+    <li class="self-crumb">getExecutableStrategy method</li>
+</ol>
+
+    <h5>AbstractAutowirePodFactory class</h5>
+    <div id="dartdoc-sidebar-left-content"></div>
+  </div><!--/.sidebar-offcanvas-->
+  <div id="dartdoc-sidebar-right" class="sidebar sidebar-offcanvas-right">
+</div><!--/.sidebar-offcanvas-->
+</main>
+<footer>
+  <span class="no-break">
+    jetleaf_pod
+      1.0.0+2
+  </span>
+  
+</footer>
+
+
+<script src="../../static-assets/highlight.pack.js?v1"></script>
+<script src="../../static-assets/docs.dart.js"></script>
+
+</body>
+</html>
+

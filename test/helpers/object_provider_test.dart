@@ -145,7 +145,7 @@ void main() {
         ObjectHolder('test2', packageName: 'test2'),
       ];
       final provider = TestObjectProvider(objects);
-      final streamResults = await provider.stream().toList();
+      final streamResults = provider.stream().toList();
       expect(streamResults, equals(objects));
     });
 

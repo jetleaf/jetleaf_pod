@@ -57,8 +57,9 @@ abstract class AbstractPodProviderFactory extends DefaultSingletonPodRegistry {
   @protected
   final Map<String, ObjectHolder<Object>> podProviderInstanceCache = {};
 
-  /// Logger for this class.
-  final Log logger = LogFactory.getLog(AbstractPodProviderFactory);
+  /// Logger instance for tracking pod factory operations, errors, and diagnostic information.
+  @protected
+  Log get logger => LogFactory.getLog(runtimeType);
 
   /// The [PodProvider] class reference for internal usage.
   @protected

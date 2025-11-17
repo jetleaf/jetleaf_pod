@@ -206,7 +206,7 @@ abstract class PodDefinition with EqualsAndHashCode, ToString {
       ),
       propertyValues = propertyValues ?? MutablePropertyValues(),
       executableArgumentValues = constructorArgumentValues ?? ConstructorArgumentValues(),
-      factoryMethod = factoryMethod ?? FactoryMethodDesign('', '')
+      factoryMethod = factoryMethod ?? FactoryMethodDesign('', '', Null.CLASS)
   {
     final visited = <Class>{};
 
@@ -353,7 +353,7 @@ abstract class PodDefinition with EqualsAndHashCode, ToString {
   ///   print("Pod has preferred constructors.");
   /// }
   /// ```
-  bool hasPreferredConstructors() => !preferredConstructors.isEmpty;
+  bool hasPreferredConstructors() => preferredConstructors.isNotEmpty;
 
   /// {@template pod_definition_has_property_values}
   /// Returns whether this pod definition contains any

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="description" content="API docs for the create method from the AbstractAutowirePodFactory class, for the Dart programming language.">
+  <title>create method - AbstractAutowirePodFactory class - pod library - Dart API</title>
+
+
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../../static-assets/github.css?v1">
+  <link rel="stylesheet" href="../../static-assets/styles.css?v1">
+  <link rel="icon" href="../../static-assets/favicon.png?v1">
+  
+</head>
+
+<body data-base-href="../../" data-using-base-href="false" class="light-theme">
+<div id="overlay-under-drawer"></div>
+<header id="title">
+  <span id="sidenav-left-toggle" class="material-symbols-outlined" role="button" tabindex="0">menu</span>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod.dart</a></li>
+    <li><a href="../../pod/AbstractAutowirePodFactory-class.html">AbstractAutowirePodFactory</a></li>
+    <li class="self-crumb">create method</li>
+  </ol>
+  <div class="self-name">create</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+  <button class="toggle" id="theme-button" title="Toggle between light and dark mode" aria-label="Light and dark mode toggle">
+    <span id="dark-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      dark_mode
+    </span>
+    <span id="light-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      light_mode
+    </span>
+  </button>
+</header>
+<main>
+<div
+    id="dartdoc-main-content"
+    class="main-content"
+    data-above-sidebar="pod&#47;AbstractAutowirePodFactory-class-sidebar.html"
+    data-below-sidebar="">
+    <div>
+<h1><span class="kind-method">create</span> method 
+</h1></div>
+
+    <section class="multi-line-signature">
+      
+  <div>
+    <ol class="annotation-list">
+        <li>@<a href="https://pub.dev/documentation/meta/1.17.0/meta/protected-constant.html">protected</a></li>
+    </ol>
+  </div>
+<span class="returntype"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Future-class.html">Future</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Object-class.html">Object</a></span>&gt;</span></span>
+<span class="name ">create</span>(<wbr><ol class="parameter-list single-line"> <li><span class="parameter" id="create-param-podName"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span> <span class="parameter-name">podName</span>, </span></li>
+<li><span class="parameter" id="create-param-root"><span class="type-annotation"><a href="../../pod/RootPodDefinition-class.html">RootPodDefinition</a></span> <span class="parameter-name">root</span>, </span></li>
+<li><span class="parameter" id="create-param-args"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/List-class.html">List</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="../../pod/ArgumentValue-class.html">ArgumentValue</a></span>&gt;</span>?</span> <span class="parameter-name">args</span></span></li>
+</ol>)
+
+      
+
+    </section>
+    
+<section class="desc markdown">
+  <p>Creates a pod instance with the given name and definition.</p>
+<p>This method handles the complete pod creation lifecycle including
+instantiation, population, and initialization.</p>
+<p>@param podName The name of the pod to create
+@param root The pod definition
+@param args Optional constructor arguments
+@return The created pod instance</p>
+</section>
+
+
+    
+<section class="summary source-code" id="source">
+  <h2><span>Implementation</span></h2>
+  <pre class="language-dart"><code class="language-dart">@protected
+Future&lt;Object&gt; create(String podName, RootPodDefinition root, List&lt;ArgumentValue&gt;? args) async {
+  &#47;&#47; Instantiate the pod
+  PodHolder? podHolder;
+
+  if (root.scope.isSingleton) {
+    final obj = podProviderInstanceCache.remove(podName);
+    final cls = obj?.getType();
+
+    if (obj != null &amp;&amp; cls != null) {
+      podHolder = (obj.getValue(), cls);
+    }
+  }
+
+  podHolder ??= await createInstance(podName, root, args);
+
+  final earlySingletonExposure = root.scope.isSingleton &amp;&amp; getAllowCircularReferences() &amp;&amp; isCurrentlyCreatingSingleton(podName);
+
+  Object pod = podHolder.$1;
+  Class podClass = podHolder.$2;
+
+  if (earlySingletonExposure) {
+    if (logger.getIsTraceEnabled()) {
+      logger.trace(&#39;Eagerly caching pod $podName to allow potential circular references resolution&#39;);
+    }
+
+    Future&lt;ObjectHolder&lt;Object&gt;&gt; create() async {
+      return await getEarlyPodReference(
+        podName,
+        root,
+        ObjectHolder(
+          pod,
+          packageName: podClass.getPackage()?.getName(),
+          qualifiedName: podClass.getQualifiedName(),
+        ),
+      );
+    }
+
+    addSingleton(podName, factory: SimpleObjectFactory(([args]) async =&gt; create()));
+  }
+
+  Object exposed = pod;
+
+  try {
+    &#47;&#47; Populate the pod instance
+    await populate(podName, root, podHolder);
+
+    &#47;&#47; Initialize the pod
+    exposed = await initializeExistingPod(exposed, podHolder.$2, podName);
+  } catch (e) {
+    if (e is PodCreationException &amp;&amp; e.getPodName().equals(podName)) {
+      rethrow;
+    }
+
+    final message = e is Throwable ? e.getMessage() : e.toString();
+    final cause = e is Throwable ? e : RuntimeException(e.toString());
+
+    throw PodCreationException.withResource(root.description, podName, message, cause: cause);
+  }
+
+  if (earlySingletonExposure) {
+    final earlyReference = await getSingleton(podName, allowEarlyReference: false);
+    if (earlyReference != null) {
+      if (exposed == pod) {
+        exposed = earlyReference;
+      } else if (!_allowRawInjection &amp;&amp; hasDependentPod(podName)) {
+        final dependents = getDependentPods(podName);
+        final actualDependents = Set.from(dependents);
+
+        for (String dependent in dependents) {
+          if (!removeSingletonIfCreated(dependent)) {
+            actualDependents.remove(dependent);
+          }
+        }
+
+        if (actualDependents.isNotEmpty) {
+          throw PodCurrentlyInCreationException(
+            name: podName,
+            msg:
+              &quot;Pod $podName has been injected into other pods ${actualDependents.join(&#39;, &#39;)} &quot;
+              &quot;in its raw (uninitialized) form as part of a circular reference. This means that &quot;
+              &quot;mentioned pods do not use the final (fully initialized) form of $podName. &quot;
+              &quot;This is often the result of over-zealous circular reference prevention. &quot;
+              &quot;Consider using &#39;getPodsForType&#39; with the &#39;allowEagerInit&#39; flag turned off.&quot;,
+          );
+        }
+      }
+    }
+  }
+
+  &#47;&#47; Register pod as disposable (if it is a disposable)
+  if (exposed is DisposablePod) {
+    try {
+      registerDisposableHandler(podName, exposed, root);
+    } on PodDefinitionValidationException catch (e) {
+      throw PodCreationException.withResource(
+        root.description,
+        podName,
+        &quot;Invalid disposable pod&quot;,
+        cause: e,
+      );
+    }
+  }
+
+  return exposed;
+}</code></pre>
+</section>
+
+
+  </div> <!-- /.main-content -->
+  <div id="dartdoc-sidebar-left" class="sidebar sidebar-offcanvas-left">
+    <!-- The search input and breadcrumbs below are only responsively visible at low resolutions. -->
+<header id="header-search-sidebar" class="hidden-l">
+  <form class="search-sidebar" role="search">
+    <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+<ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod</a></li>
+    <li><a href="../../pod/AbstractAutowirePodFactory-class.html">AbstractAutowirePodFactory</a></li>
+    <li class="self-crumb">create method</li>
+</ol>
+
+    <h5>AbstractAutowirePodFactory class</h5>
+    <div id="dartdoc-sidebar-left-content"></div>
+  </div><!--/.sidebar-offcanvas-->
+  <div id="dartdoc-sidebar-right" class="sidebar sidebar-offcanvas-right">
+</div><!--/.sidebar-offcanvas-->
+</main>
+<footer>
+  <span class="no-break">
+    jetleaf_pod
+      1.0.0+2
+  </span>
+  
+</footer>
+
+
+<script src="../../static-assets/highlight.pack.js?v1"></script>
+<script src="../../static-assets/docs.dart.js"></script>
+
+</body>
+</html>
+

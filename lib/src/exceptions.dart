@@ -37,6 +37,12 @@ import 'helpers/object.dart';
 class PodException extends NestedRuntimeException {
   /// {@macro pods_exception}
   PodException(super.message, [super.cause]);
+  
+  @override
+  StackTrace getStackTrace() => StackTrace.current;
+  
+  @override
+  StackTrace? get stackTrace => getStackTrace();
 }
 
 /// {@template no_unique_pod_definition_exception}
@@ -57,29 +63,25 @@ class NoUniquePodDefinitionException extends NoSuchPodDefinitionException {
   final List<String>? podNamesFound;
 
   /// Create a new [NoUniquePodDefinitionException] with a type, pod names, and custom message.
-  NoUniquePodDefinitionException.byTypeWithNamesAndMessage(
-      Class type, List<String> podNamesFound, String message)
-      : numberOfPodsFound = podNamesFound.length,
-        podNamesFound = List.unmodifiable(podNamesFound),
-        super.byTypeWithMessage(type, message);
+  NoUniquePodDefinitionException.byTypeWithNamesAndMessage(super.type, List<String> podNamesFound, super.message)
+    : numberOfPodsFound = podNamesFound.length,
+      podNamesFound = List.unmodifiable(podNamesFound),
+      super.byTypeWithMessage();
 
   /// Create a new [NoUniquePodDefinitionException] with a type and count of pods.
-  NoUniquePodDefinitionException.byTypeWithCount(
-      Class type, int numberOfPodsFound, String message)
-      : numberOfPodsFound = numberOfPodsFound,
-        podNamesFound = null,
-        super.byTypeWithMessage(type, message);
+  NoUniquePodDefinitionException.byTypeWithCount(super.type, this.numberOfPodsFound, super.message)
+    : podNamesFound = null,
+      super.byTypeWithMessage();
 
   /// Create a new [NoUniquePodDefinitionException] with a type and pod names.
-  NoUniquePodDefinitionException.byTypeWithNames(
-      Class type, List<String> podNamesFound)
-      : numberOfPodsFound = podNamesFound.length,
-        podNamesFound = List.unmodifiable(podNamesFound),
-        super.byTypeWithMessage(
-          type,
-          "Expected a single candidate for type '${type.getOriginal()}', but found ${podNamesFound.length} matches: ${podNamesFound.join(', ')}. "
-          "Disambiguate by requesting by name/qualifier or mark one definition as primary.",
-        );
+  NoUniquePodDefinitionException.byTypeWithNames(Class type, List<String> podNamesFound)
+    : numberOfPodsFound = podNamesFound.length,
+      podNamesFound = List.unmodifiable(podNamesFound),
+      super.byTypeWithMessage(
+        type,
+        "Expected a single candidate for type '${type.getOriginal()}', but found ${podNamesFound.length} matches: ${podNamesFound.join(', ')}. "
+        "Disambiguate by requesting by name/qualifier or mark one definition as primary.",
+      );
 
   /// Return the number of pods found when only one matching pod was expected.
   @override
@@ -107,29 +109,24 @@ class PodCreationException extends FatalPodException {
 
   /// Create a new [PodCreationException] with a simple message.
   PodCreationException(String msg, {Throwable? cause})
-      : name = null,
-        resourceDescription = null,
-        _relatedCauses = null,
-        super(msg, cause);
+    : name = null,
+      resourceDescription = null,
+      _relatedCauses = null,
+      super(msg, cause);
 
   /// Create a new [PodCreationException] with a pod name.
-  PodCreationException.withPodName(String name, String msg, {Throwable? cause})
-      : name = name,
-        resourceDescription = null,
-        _relatedCauses = null,
-        super("Failed to create pod '$name': $msg", cause);
+  PodCreationException.withPodName(String this.name, String msg, {Throwable? cause})
+    : resourceDescription = null,
+      _relatedCauses = null,
+      super("Failed to create pod '$name': $msg", cause);
 
   /// Create a new [PodCreationException] with resource description and pod name.
-  PodCreationException.withResource(
-    this.resourceDescription,
-    this.name,
-    String? msg, {
-    Throwable? cause,
-  })  : _relatedCauses = null,
-        super(
-          "Failed to create pod '${name ?? '<unknown>'}'${resourceDescription != null ? " (defined in $resourceDescription)" : ""}: ${msg ?? 'unspecified error'}",
-          cause,
-        );
+  PodCreationException.withResource(this.resourceDescription, this.name, String? msg, {Throwable? cause})
+    : _relatedCauses = null,
+      super(
+        "Failed to create pod '${name ?? '<unknown>'}'${resourceDescription != null ? " (defined in $resourceDescription)" : ""}: ${msg ?? 'unspecified error'}",
+        cause,
+      );
 
   /// Return the description of the resource that the pod definition came from, if any.
   String? getResourceDescription() => resourceDescription;
@@ -165,7 +162,7 @@ class PodCreationException extends FatalPodException {
     }
     if (_relatedCauses != null) {
       for (var relatedCause in _relatedCauses) {
-        if (relatedCause.runtimeType == exType) {
+        if (relatedCause.getClass() == exType) {
           return true;
         }
         if (relatedCause is NestedRuntimeException &&
@@ -192,41 +189,24 @@ class NoSuchPodDefinitionException extends PodException {
   final ResolvableType? resolvableType;
 
   /// Create a new [NoSuchPodDefinitionException] by pod name.
-  NoSuchPodDefinitionException.byName(String name)
-      : name = name,
-        resolvableType = null,
-        super("No pod named '$name' available in the current context");
+  NoSuchPodDefinitionException.byName(String this.name)
+    : resolvableType = null, super("No pod named '$name' available in the current context");
 
   /// Create a new [NoSuchPodDefinitionException] by pod name with custom message.
-  NoSuchPodDefinitionException.byNameWithMessage(String name, String message)
-      : name = name,
-        resolvableType = null,
-        super("No pod named '$name' available: $message");
+  NoSuchPodDefinitionException.byNameWithMessage(String this.name, String message)
+    : resolvableType = null, super("No pod named '$name' available: $message");
 
   /// Create a new [NoSuchPodDefinitionException] by type.
   NoSuchPodDefinitionException.byType(Class type)
-      : name = null,
-        resolvableType = ResolvableType.forClass(type.getOriginal()),
-        super("No qualifying pod of type '${type.getOriginal()}' available in the current context");
+    : name = null,
+      resolvableType = ResolvableType.forClass(type.getOriginal()),
+      super("No qualifying pod of type '${type.getQualifiedName()}' available in the current context");
 
   /// Create a new [NoSuchPodDefinitionException] by type with custom message.
   NoSuchPodDefinitionException.byTypeWithMessage(Class type, String message)
-      : name = null,
-        resolvableType = ResolvableType.forClass(type.getOriginal()),
-        super("No qualifying pod of type '${type.getOriginal()}' available: $message");
-
-  /// Create a new [NoSuchPodDefinitionException] by resolvable type.
-  NoSuchPodDefinitionException.byResolvableType(ResolvableType type)
-      : name = null,
-        resolvableType = type,
-        super("No qualifying pod of type '$type' available in the current context");
-
-  /// Create a new [NoSuchPodDefinitionException] by resolvable type with custom message.
-  NoSuchPodDefinitionException.byResolvableTypeWithMessage(
-      ResolvableType type, String message)
-      : name = null,
-        resolvableType = type,
-        super("No qualifying pod of type '$type' available: $message");
+    : name = null,
+      resolvableType = ResolvableType.forClass(type.getOriginal()),
+      super("No qualifying pod of type '${type.getQualifiedName()}' available: $message");
 
   /// Return the name of the missing pod, if lookup by name failed.
   String? getPodName() => name;
@@ -297,10 +277,8 @@ Suggested actions: introduce lazy injection, use a provider/factory or proxy, or
 /// ```
 /// {@endtemplate}
 class PodDefinitionStoreException extends PodCreationException {
-  final String name;
-
   /// {@macro pod_definition_store_exception}
-  PodDefinitionStoreException({String? msg, required this.name, String? resourceDescription, Throwable? cause}) : super.withResource(
+  PodDefinitionStoreException({String? msg, required String name, String? resourceDescription, Throwable? cause}) : super.withResource(
     resourceDescription,
     name,
     'Failed to register pod definition "$name"${resourceDescription != null ? " (from $resourceDescription)" : ""}: ${msg ?? 'unspecified error'}. Check declaration and uniqueness of the pod name.',
@@ -503,7 +481,7 @@ class PodProviderNotInitializedException extends FatalPodException {
   /// Create a new [PodProviderNotInitializedException] with the given message.
   /// 
   /// {@macro factory_pod_not_initialized_exception}
-  PodProviderNotInitializedException.withMessage(String msg) : super(msg);
+  PodProviderNotInitializedException.withMessage(String super.msg);
 }
 
 /// {@template pod_definition_validation_exception}
@@ -563,11 +541,10 @@ class PodDefinitionValidationException extends PodException {
 /// ```
 /// {@endtemplate}
 class ScopeNotActiveException extends PodCreationException {
-  final String name;
   final String scopeName;
 
   /// {@macro scope_not_active_exception}
-  ScopeNotActiveException(this.name, this.scopeName, IllegalStateException cause) :
+  ScopeNotActiveException(String name, this.scopeName, IllegalStateException cause) :
 		super.withPodName(
       name,
       "Scope '$scopeName' for pod '$name' is not active on the current thread. "

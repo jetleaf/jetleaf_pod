@@ -301,11 +301,11 @@ abstract class ObjectFactory<T> {
   /// ```
   /// {@endtemplate}
   Future<ObjectFactory<R>> chain<R>(ObjectFactory<R> Function(T) nextFactory) async {
-    final create = () async {
+    Future<ObjectFactory<R>> create() async {
       final firstResult = await get();
       final next = nextFactory(firstResult.getValue());
       return next;
-    };
+    }
 
     final result = await create();
     return SimpleObjectFactory<R>(([args]) => result.get(args));
@@ -332,11 +332,11 @@ abstract class ObjectFactory<T> {
   /// ```
   /// {@endtemplate}
   Future<ObjectFactory<T>> withSideEffect(void Function(T) sideEffect) async {
-    final create = ([args]) async {
+    Future<ObjectHolder<T>> create([args]) async {
       final result = await get(args);
       sideEffect(result.getValue());
       return result;
-    };
+    }
 
     return SimpleObjectFactory<T>(([args]) => create(args));
   }
@@ -356,7 +356,7 @@ abstract class ObjectFactory<T> {
   /// ```
   /// {@endtemplate}
   @override
-  String toString() => 'ObjectFactory<${T}>';
+  String toString() => 'ObjectFactory<$T>';
 
   /// {@template default_object_factory_copy_with}
   /// Creates a copy of this ObjectFactory with a new creator function.

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="description" content="API docs for the getProviderObject method from the AbstractPodProviderFactory class, for the Dart programming language.">
+  <title>getProviderObject method - AbstractPodProviderFactory class - pod library - Dart API</title>
+
+
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../../static-assets/github.css?v1">
+  <link rel="stylesheet" href="../../static-assets/styles.css?v1">
+  <link rel="icon" href="../../static-assets/favicon.png?v1">
+  
+</head>
+
+<body data-base-href="../../" data-using-base-href="false" class="light-theme">
+<div id="overlay-under-drawer"></div>
+<header id="title">
+  <span id="sidenav-left-toggle" class="material-symbols-outlined" role="button" tabindex="0">menu</span>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod.dart</a></li>
+    <li><a href="../../pod/AbstractPodProviderFactory-class.html">AbstractPodProviderFactory</a></li>
+    <li class="self-crumb">getProviderObject method</li>
+  </ol>
+  <div class="self-name">getProviderObject</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+  <button class="toggle" id="theme-button" title="Toggle between light and dark mode" aria-label="Light and dark mode toggle">
+    <span id="dark-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      dark_mode
+    </span>
+    <span id="light-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      light_mode
+    </span>
+  </button>
+</header>
+<main>
+<div
+    id="dartdoc-main-content"
+    class="main-content"
+    data-above-sidebar="pod&#47;AbstractPodProviderFactory-class-sidebar.html"
+    data-below-sidebar="">
+    <div>
+<h1><span class="kind-method">getProviderObject</span> method 
+</h1></div>
+
+    <section class="multi-line-signature">
+      
+  <div>
+    <ol class="annotation-list">
+        <li>@<a href="https://pub.dev/documentation/meta/1.17.0/meta/protected-constant.html">protected</a></li>
+    </ol>
+  </div>
+<span class="returntype"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Future-class.html">Future</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="../../pod/ObjectHolder-class.html">ObjectHolder</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Object-class.html">Object</a></span>&gt;</span></span>&gt;</span></span>
+<span class="name ">getProviderObject</span>(<wbr><ol class="parameter-list"> <li><span class="parameter" id="getProviderObject-param-provider"><span class="type-annotation"><a href="../../pod/PodProvider-class.html">PodProvider</a></span> <span class="parameter-name">provider</span>, </span></li>
+<li><span class="parameter" id="getProviderObject-param-type"><span class="type-annotation">Class?</span> <span class="parameter-name">type</span>, </span></li>
+<li><span class="parameter" id="getProviderObject-param-name"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span> <span class="parameter-name">name</span>, </span></li>
+<li><span class="parameter" id="getProviderObject-param-shouldPostProcess"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a></span> <span class="parameter-name">shouldPostProcess</span>, </span></li>
+</ol>)
+
+      
+
+    </section>
+    
+<section class="desc markdown">
+  <p>Retrieves the object managed by a <a href="../../pod/PodProvider-class.html">PodProvider</a>, applying caching
+and optional post-processing semantics.</p>
+<p>This method encapsulates the complete retrieval lifecycle for provider-based
+pods, balancing <strong>performance</strong> (fast cached return) and <strong>correctness</strong>
+(safe singleton initialization and decoration).</p>
+<h1 id="retrieval-flow">Retrieval Flow</h1>
+<ol>
+<li>
+<p><strong>Fast path: cache hit</strong></p>
+<ul>
+<li>If a raw <a href="../../pod/ObjectHolder-class.html">ObjectHolder</a> is already cached in
+<a href="../../pod/AbstractPodProviderFactory/podProviderInstanceCache.html">podProviderInstanceCache</a>, return it directly.</li>
+<li>If <code>shouldPostProcess</code> is <code>true</code>, and the singleton is not currently
+being created, apply <a href="../../pod/AbstractPodProviderFactory/postProcessObjectFromPodProvider.html">postProcessObjectFromPodProvider</a> <em>on-the-fly</em>
+without overwriting the raw cache.</li>
+</ul>
+</li>
+<li>
+<p><strong>Singleton path: uncached</strong></p>
+<ul>
+<li>If the provider is a singleton and <code>containsSingleton</code> reports that
+the registry knows the name, invoke <code>_doGet</code> to retrieve the raw object.</li>
+<li>If another thread/path cached the object while awaiting, prefer the
+cached one and apply optional post-processing.</li>
+<li>Cache only the <strong>raw</strong> object, never the post-processed variant.</li>
+</ul>
+</li>
+<li>
+<p><strong>Non-singleton path</strong></p>
+<ul>
+<li>For prototype or non-registered providers, call <code>_doGet</code> each time.</li>
+<li>Apply optional post-processing immediately; no caching is performed.</li>
+</ul>
+</li>
+</ol>
+<h1 id="error-handling">Error Handling</h1>
+<ul>
+<li>Wraps any post-processing errors into <a href="../../pod/PodCreationException-class.html">PodCreationException</a>.</li>
+<li>Protects against circular singleton creation by skipping post-processing
+when <code>isCurrentlyCreatingSingleton</code> is true.</li>
+</ul>
+<h1 id="parameters">Parameters</h1>
+<ul>
+<li><code>provider</code>: The <a href="../../pod/PodProvider-class.html">PodProvider</a> to query.</li>
+<li><code>type</code>: The expected type (may be <code>null</code>).</li>
+<li><code>name</code>: The logical pod name.</li>
+<li><code>shouldPostProcess</code>: If <code>true</code>, applies <a href="../../pod/AbstractPodProviderFactory/postProcessObjectFromPodProvider.html">postProcessObjectFromPodProvider</a>
+before returning.</li>
+</ul>
+<h1 id="returns">Returns</h1>
+<ul>
+<li>An <a href="../../pod/ObjectHolder-class.html">ObjectHolder</a> wrapping the resolved object.</li>
+<li>Will never return <code>null</code>, but may wrap a <a href="../../pod/NullablePod-class.html">NullablePod</a>.</li>
+</ul>
+<h1 id="throws">Throws</h1>
+<ul>
+<li><a href="../../pod/PodCreationException-class.html">PodCreationException</a> if post-processing fails.</li>
+<li>Other exceptions surfaced by <code>_doGet</code>.</li>
+</ul>
+<h1 id="notes">Notes</h1>
+<ul>
+<li>The <strong>raw instance cache</strong> always stores <em>unprocessed</em> objects.</li>
+<li>Post-processing is transient, applied per-request, and never cached.</li>
+</ul>
+</section>
+
+
+    
+<section class="summary source-code" id="source">
+  <h2><span>Implementation</span></h2>
+  <pre class="language-dart"><code class="language-dart">@protected
+Future&lt;ObjectHolder&lt;Object&gt;&gt; getProviderObject(PodProvider provider, Class? type, String name, bool shouldPostProcess) async {
+  &#47;&#47; Fast path: if cached raw object exists, return it (or a processed view) without calling provider.
+  final ObjectHolder&lt;Object&gt;? cached = podProviderInstanceCache[name];
+  if (cached != null) {
+    if (!shouldPostProcess) {
+      return cached;
+    }
+
+    &#47;&#47; Caller wants a post-processed view. If we&#39;re currently creating the singleton,
+    &#47;&#47; don&#39;t attempt to post-process — return the raw cached value.
+    if (isCurrentlyCreatingSingleton(name)) {
+      return cached;
+    }
+
+    &#47;&#47; Perform post-processing on-the-fly, but DO NOT overwrite the cached raw value.
+    beforeSingletonCreation(name);
+    try {
+      return await postProcessObjectFromPodProvider(cached, name);
+    } catch (ex) {
+      throw PodCreationException(
+        &quot;Post-processing of PodProvider&#39;s singleton object failed&quot;,
+        cause: ex is Throwable ? ex : RuntimeException(ex.toString()),
+      );
+    } finally {
+      afterSingletonCreation(name);
+    }
+  }
+
+  &#47;&#47; No cached raw object. If the provider claims singleton and registry knows about it,
+  &#47;&#47; get from provider and (by previous behavior) cache the raw result.
+  if (provider.isSingleton() &amp;&amp; containsSingleton(name)) {
+    &#47;&#47; Obtain raw object from provider
+    ObjectHolder&lt;Object&gt; object = await _doGet(provider, type, name);
+
+    &#47;&#47; Another concurrent path may have populated the cache while we awaited — prefer that
+    final ObjectHolder&lt;Object&gt;? seen = podProviderInstanceCache[name];
+    if (seen != null) {
+      &#47;&#47; If caller wants post-process, apply it on-the-fly to the seen value
+      if (shouldPostProcess) {
+        if (isCurrentlyCreatingSingleton(name)) {
+          return seen;
+        }
+
+        beforeSingletonCreation(name);
+        try {
+          return await postProcessObjectFromPodProvider(seen, name);
+        } catch (ex) {
+          throw PodCreationException(
+            &quot;Post-processing of PodProvider&#39;s singleton object failed&quot;,
+            cause: ex is Throwable ? ex : RuntimeException(ex.toString()),
+          );
+        } finally {
+          afterSingletonCreation(name);
+        }
+      }
+
+      return seen;
+    }
+
+    &#47;&#47; Cache the raw object (maintain previous caching semantics)
+    if (containsSingleton(name)) {
+      podProviderInstanceCache[name] = object;
+    }
+
+    &#47;&#47; If post-processing requested, process the raw object on-the-fly and DO NOT overwrite cache.
+    if (shouldPostProcess) {
+      if (isCurrentlyCreatingSingleton(name)) {
+        return object;
+      }
+
+      beforeSingletonCreation(name);
+      try {
+        return await postProcessObjectFromPodProvider(object, name);
+      } catch (ex) {
+        throw PodCreationException(
+          &quot;Post-processing of PodProvider&#39;s singleton object failed&quot;,
+          cause: ex is Throwable ? ex : RuntimeException(ex.toString()),
+        );
+      } finally {
+        afterSingletonCreation(name);
+      }
+    }
+
+    &#47;&#47; No post-processing requested, return the raw cached object
+    return object;
+  } else {
+    &#47;&#47; Non-singleton or not registered as singleton: just call provider (no caching)
+    ObjectHolder&lt;Object&gt; object = await _doGet(provider, type, name);
+    if (shouldPostProcess) {
+      try {
+        return await postProcessObjectFromPodProvider(object, name);
+      } catch (ex) {
+        throw PodCreationException(
+          &quot;Post-processing of PodProvider&#39;s object failed for $name&quot;,
+          cause: ex is Throwable ? ex : RuntimeException(ex.toString()),
+        );
+      }
+    }
+
+    return object;
+  }
+}</code></pre>
+</section>
+
+
+  </div> <!-- /.main-content -->
+  <div id="dartdoc-sidebar-left" class="sidebar sidebar-offcanvas-left">
+    <!-- The search input and breadcrumbs below are only responsively visible at low resolutions. -->
+<header id="header-search-sidebar" class="hidden-l">
+  <form class="search-sidebar" role="search">
+    <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+<ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod</a></li>
+    <li><a href="../../pod/AbstractPodProviderFactory-class.html">AbstractPodProviderFactory</a></li>
+    <li class="self-crumb">getProviderObject method</li>
+</ol>
+
+    <h5>AbstractPodProviderFactory class</h5>
+    <div id="dartdoc-sidebar-left-content"></div>
+  </div><!--/.sidebar-offcanvas-->
+  <div id="dartdoc-sidebar-right" class="sidebar sidebar-offcanvas-right">
+</div><!--/.sidebar-offcanvas-->
+</main>
+<footer>
+  <span class="no-break">
+    jetleaf_pod
+      1.0.0+2
+  </span>
+  
+</footer>
+
+
+<script src="../../static-assets/highlight.pack.js?v1"></script>
+<script src="../../static-assets/docs.dart.js"></script>
+
+</body>
+</html>
+

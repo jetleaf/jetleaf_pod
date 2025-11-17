@@ -16,7 +16,7 @@
 import 'package:jetleaf_lang/lang.dart';
 import 'package:test/test.dart';
 
-class TestAutoCloseable implements AutoCloseable {
+class TestAutoCloseable implements Closeable {
   bool closed = false;
   
   @override
@@ -25,7 +25,7 @@ class TestAutoCloseable implements AutoCloseable {
   }
 }
 
-class TestAsyncAutoCloseable implements AutoCloseable {
+class TestAsyncAutoCloseable implements Closeable {
   bool closed = false;
   
   @override
@@ -36,10 +36,10 @@ class TestAsyncAutoCloseable implements AutoCloseable {
 }
 
 void main() {
-  group('AutoCloseable', () {
+  group('Closeable', () {
     test('should be an abstract class', () {
       final closeable = TestAutoCloseable();
-      expect(closeable, isA<AutoCloseable>());
+      expect(closeable, isA<Closeable>());
     });
     
     test('should have close method', () {

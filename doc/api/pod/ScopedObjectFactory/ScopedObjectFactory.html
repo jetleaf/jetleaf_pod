@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="description" content="API docs for the ScopedObjectFactory.new constructor from Class ScopedObjectFactory from the pod library, for the Dart programming language.">
+  <title>ScopedObjectFactory.new constructor - ScopedObjectFactory - pod library - Dart API</title>
+
+
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../../static-assets/github.css?v1">
+  <link rel="stylesheet" href="../../static-assets/styles.css?v1">
+  <link rel="icon" href="../../static-assets/favicon.png?v1">
+  
+</head>
+
+<body data-base-href="../../" data-using-base-href="false" class="light-theme">
+<div id="overlay-under-drawer"></div>
+<header id="title">
+  <span id="sidenav-left-toggle" class="material-symbols-outlined" role="button" tabindex="0">menu</span>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod.dart</a></li>
+    <li><a href="../../pod/ScopedObjectFactory-class.html">ScopedObjectFactory<span class="signature">&lt;<wbr><span class="type-parameter">T</span>&gt;</span></a></li>
+    <li class="self-crumb">ScopedObjectFactory.new constructor</li>
+  </ol>
+  <div class="self-name">ScopedObjectFactory.new</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+  <button class="toggle" id="theme-button" title="Toggle between light and dark mode" aria-label="Light and dark mode toggle">
+    <span id="dark-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      dark_mode
+    </span>
+    <span id="light-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      light_mode
+    </span>
+  </button>
+</header>
+<main>
+  <div
+      id="dartdoc-main-content"
+      class="main-content"
+      data-above-sidebar="pod&#47;ScopedObjectFactory-class-sidebar.html"
+      data-below-sidebar="">
+      <div>
+<h1><span class="kind-constructor">ScopedObjectFactory&lt;<wbr><span class="type-parameter">T</span>&gt;</span> constructor 
+</h1></div>
+
+    <section class="multi-line-signature">
+      
+      <span class="name ">ScopedObjectFactory&lt;<wbr><span class="type-parameter">T</span>&gt;</span>(<wbr><ol class="parameter-list single-line"> <li><span class="parameter" id="-param-name"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span> <span class="parameter-name">name</span>, </span></li>
+<li><span class="parameter" id="-param-scope"><span class="type-annotation"><a href="../../pod/PodScope-class.html">PodScope</a></span> <span class="parameter-name">scope</span>, </span></li>
+<li><span class="parameter" id="-param-fallbackFactory"><span class="type-annotation"><a href="../../pod/ObjectFactory-class.html">ObjectFactory</a><span class="signature">&lt;<wbr><span class="type-parameter">T</span>&gt;</span></span> <span class="parameter-name">fallbackFactory</span></span></li>
+</ol>)
+    </section>
+    
+<section class="desc markdown">
+  <p>An <a href="../../pod/ObjectFactory-class.html">ObjectFactory</a> implementation that retrieves objects from a specific <a href="../../pod/PodScope-class.html">PodScope</a>.</p>
+<p>This factory combines a pod scope with a fallback factory to provide
+scope-aware object retrieval. It first attempts to get the object from
+the specified scope, and if not found, uses the fallback factory to
+create and register the object in the scope.</p>
+<p>Key features:</p>
+<ul>
+<li>Scope-aware object retrieval and creation</li>
+<li>Lazy initialization with fallback factory</li>
+<li>Thread-safe scope operations</li>
+<li>Support for various scope types (singleton, prototype, request, session, etc.)</li>
+<li>Integration with scope lifecycle management</li>
+</ul>
+<p>This is particularly useful for:</p>
+<ul>
+<li>Managing objects with specific lifecycle requirements</li>
+<li>Handling request-scoped or session-scoped objects</li>
+<li>Implementing custom scope strategies</li>
+<li>Integrating with web frameworks and other scope-aware environments</li>
+</ul>
+<p>Example usage:</p>
+<pre class="language-dart"><code class="language-dart">// Create a fallback factory for UserService
+final fallbackFactory = () {
+  final service = UserService();
+  service.initialize();
+  return service;
+};
+
+// Create a scoped factory for request scope
+final scopedFactory = ScopedObjectFactory&lt;UserService&gt;(
+  'userService',
+  requestScope,
+  fallbackFactory,
+);
+
+// Get the UserService instance from the scope
+final userService = scopedFactory.getObject();
+</code></pre>
+<p><a href="../../pod/ScopedObjectFactory/name.html">name</a>: The name of the pod to manage in the scope
+<a href="../../pod/ScopedObjectFactory/scope.html">scope</a>: The pod scope to use for object retrieval and registration
+<a href="../../pod/ScopedObjectFactory/fallbackFactory.html">fallbackFactory</a>: The factory to use when the object needs to be created</p>
+<p>Example:</p>
+<pre class="language-dart"><code class="language-dart">final factory = ScopedObjectFactory&lt;UserService&gt;(
+  'userService',
+  sessionScope,
+  () =&gt; UserService()..initialize(),
+);
+</code></pre>
+</section>
+
+
+    
+<section class="summary source-code" id="source">
+  <h2><span>Implementation</span></h2>
+  <pre class="language-dart"><code class="language-dart">ScopedObjectFactory(this.name, this.scope, this.fallbackFactory);</code></pre>
+</section>
+
+
+  </div> <!-- /.main-content -->
+  <div id="dartdoc-sidebar-left" class="sidebar sidebar-offcanvas-left">
+    <!-- The search input and breadcrumbs below are only responsively visible at low resolutions. -->
+<header id="header-search-sidebar" class="hidden-l">
+  <form class="search-sidebar" role="search">
+    <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+<ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod</a></li>
+    <li><a href="../../pod/ScopedObjectFactory-class.html">ScopedObjectFactory<span class="signature">&lt;<wbr><span class="type-parameter">T</span>&gt;</span></a></li>
+    <li class="self-crumb">ScopedObjectFactory.new constructor</li>
+</ol>
+
+    <h5>ScopedObjectFactory class</h5>
+    <div id="dartdoc-sidebar-left-content"></div>
+  </div><!--/.sidebar-offcanvas-left-->
+  <div id="dartdoc-sidebar-right" class="sidebar sidebar-offcanvas-right">
+  </div><!--/.sidebar-offcanvas-->
+</main>
+<footer>
+  <span class="no-break">
+    jetleaf_pod
+      1.0.0+2
+  </span>
+  
+</footer>
+
+
+<script src="../../static-assets/highlight.pack.js?v1"></script>
+<script src="../../static-assets/docs.dart.js"></script>
+
+</body>
+</html>
+

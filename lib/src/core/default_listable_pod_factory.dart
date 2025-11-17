@@ -15,18 +15,22 @@
 import 'dart:async';
 
 import 'package:jetleaf_lang/lang.dart';
-import 'package:jetleaf_logging/logging.dart';
 import 'package:meta/meta.dart';
 
 import '../definition/pod_definition.dart';
 import '../definition/pod_definition_registry.dart';
 import '../definition/simple_pod_definition_registry.dart';
+import '../dependency/adaptable_resolver_dependency.dart';
+import '../dependency/object_factory_dependency.dart';
+import '../dependency/object_provider_dependency.dart';
+import '../dependency/optional_dependency.dart';
 import '../helpers/nullable_pod.dart';
 import '../exceptions.dart';
 import '../helpers/object.dart';
 import '../helpers/utils.dart';
 import '../lifecycle/lifecycle.dart';
 import 'abstract_autowire_pod_factory.dart';
+import 'factory_aware_order_source_provider.dart';
 import 'pod_factory.dart';
 
 /// {@template default_listable_pod_factory}
@@ -68,14 +72,6 @@ import 'pod_factory.dart';
 /// - [PodDefinitionRegistry] for pod definition management
 /// {@endtemplate}
 class DefaultListablePodFactory extends AbstractAutowirePodFactory implements ConfigurableListablePodFactory {
-  /// {@template default_listable_pod_factory.logger}
-  /// Logger instance for tracking factory operations and debugging.
-  /// 
-  /// Used for tracing dependency resolution, pod instantiation, and configuration
-  /// changes at various log levels (trace, debug, warn, info).
-  /// {@endtemplate}
-  final Log _logger = LogFactory.getLog(DefaultListablePodFactory);
-
   /// {@template default_listable_pod_factory.pod_definition_registry}
   /// Thread-local storage for pod definition registry.
   /// 
@@ -121,7 +117,7 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
   /// See also:
   /// - [registerIgnoredDependency] for adding types to this set
   /// {@endtemplate}
-  final Set<Class> _ignoredDependencyTypes = Set();
+  final Set<Class> _ignoredDependencyTypes = {};
 
   /// {@template default_listable_pod_factory.merged_pod_definition_holders}
   /// Cache of merged pod definition holders for performance optimization.
@@ -309,8 +305,8 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
         }
       }
     } catch (e) {
-      if(_logger.getIsTraceEnabled()) {
-        _logger.trace("Could not find annotations on pod '$podName': $e");
+      if(logger.getIsTraceEnabled()) {
+        logger.trace("Could not find annotations on pod '$podName': $e");
       }
     }
     
@@ -331,8 +327,8 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
         }
       }
     } catch (e) {
-      if(_logger.getIsTraceEnabled()) {
-        _logger.trace("Could not find annotation on pod '$podName': $e");
+      if(logger.getIsTraceEnabled()) {
+        logger.trace("Could not find annotation on pod '$podName': $e");
       }
     }
     
@@ -347,8 +343,8 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
     try {
       return getPodRegistry().getDefinition(podName);
     } on NoSuchPodDefinitionException catch (_) {
-      if(_logger.getIsWarnEnabled()) {
-        _logger.warn("No pod named '$podName' is defined");
+      if(logger.getIsWarnEnabled()) {
+        logger.warn("No pod named '$podName' is defined");
       }
       
       throw PodDefinitionStoreException(
@@ -364,8 +360,8 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
     try {
       return getPodRegistry().getDefinitionByClass(type);
     } on NoSuchPodDefinitionException catch (_) {
-      if(_logger.getIsWarnEnabled()) {
-        _logger.warn("No pod of type '${type.getQualifiedName()}' is defined");
+      if(logger.getIsWarnEnabled()) {
+        logger.warn("No pod of type '${type.getQualifiedName()}' is defined");
       }
       
       throw PodDefinitionStoreException(
@@ -410,9 +406,7 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
         }
       }
       
-      if (type == null) {
-        type = podDef.type;
-      }
+      type ??= podDef.type;
     }
 
     if (type == null && containsSingleton(name)) {
@@ -462,7 +456,7 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
           final allowPpInit = allowEagerInit || containsSingleton(name);
           final isS = await isSingleton(name);
 
-          if (cls == type || cls.isSubclassOf(type) || type.isAssignableFrom(cls) || cls.isInstance(type)) {
+          if (cls == type || cls.isSubclassOf(type) || type.isAssignableFrom(cls) || type.isInstance(cls)) {
             if (!isPp) {
               if (includeNonSingletons || isS) {
                 if (allowPpInit) {
@@ -489,8 +483,8 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
         rethrow;
       }
 
-      if (_logger.getIsTraceEnabled()) {
-        _logger.trace("Could not get pod names for type '$type'. $e");
+      if (logger.getIsTraceEnabled()) {
+        logger.trace("Could not get pod names for type '$type'. $e");
       }
 
       onSuppressedException(e);
@@ -571,8 +565,8 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
         if (e is PodCurrentlyInCreationException) {
 					String exPodName = (e as PodCurrentlyInCreationException).name;
 					if (isCurrentlyInCreation(exPodName)) {
-						if (_logger.getIsTraceEnabled()) {
-							_logger.trace("Ignoring match to currently created Pod '$exPodName': ${e.getMessage()}");
+						if (logger.getIsTraceEnabled()) {
+							logger.trace("Ignoring match to currently created Pod '$exPodName': ${e.getMessage()}");
 						}
 
 						onSuppressedException(e);
@@ -749,8 +743,8 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
       // 2.b) If declared type is a PodProvider, check provided type metadata first
       if (POD_PROVIDER_CLASS.isAssignableFrom(declaredType)) {
         // If the definition exposes providedType metadata, prefer that
-        final Class? providedFromDef = def.type; // optional metadata; null if unknown
-        if (providedFromDef != null && requestedType.isAssignableFrom(providedFromDef)) {
+        final Class providedFromDef = def.type; // optional metadata; null if unknown
+        if (requestedType.isAssignableFrom(providedFromDef)) {
           return true;
         }
 
@@ -809,57 +803,19 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
 
   @override
   Future<void> preInstantiateSingletons() async {
-    if (_logger.getIsDebugEnabled()) {
-      _logger.debug("Starting pre-instantiation of singleton pods in $runtimeType.");
+    if (logger.getIsDebugEnabled()) {
+      logger.debug("Starting pre-instantiation of singleton pods in $runtimeType.");
     }
 
     final podNames = List<String>.from(getDefinitionNames());
+    final pods = <String, Object>{};
 
-    for (final podName in podNames) {
-      try {
-        final def = getLocalMergedPodDefinition(podName);
-        if (!def.isAbstractAndNoFactory() && def.scope.isSingleton) {
-          final isLazy = def.lifecycle.isLazy != null && def.lifecycle.isLazy!;
-
-          if (isLazy) {
-            if (_logger.getIsTraceEnabled()) {
-              _logger.trace("Pod '$podName' is marked as a lazy singleton. Skipping pre-instantiation");
-            }
-          } else {
-            try {
-              if (await isPodProvider(podName)) {
-                final ppName = podProviderName(podName);
-                await getPod(ppName);
-              } else {
-                await getPod(podName);
-              }
-            } on PodCurrentlyInCreationException catch (_) {
-              if (_logger.getIsTraceEnabled()) {
-                _logger.trace("Pod '$podName' is currently in creation by another thread. Skipping pre-instantiation");
-              }
-            } catch (e) {
-              if (_logger.getIsWarnEnabled()) {
-                _logger.warn("Failed to pre-instantiate singleton '$podName'", error: e);
-              }
-
-              rethrow;
-            }
-          }
-        } else {
-          if (_logger.getIsTraceEnabled()) {
-            _logger.trace(
-              "Skipping pod '$podName': definition is not a singleton, it's abstract and has no factory constructor "
-              "or factory method. Scope='${def.scope}', lazy='${def.lifecycle.isLazy}'. "
-              "If this pod should be created, provide a factory method/constructor or mark it non-abstract."
-            );
-          }
-
-          continue;
-        }
-      } on NoSuchPodDefinitionException catch (_) {
-        if(_logger.getIsWarnEnabled()) {
-          _logger.warn("Could not find pod definition '$podName' while pre-instantiating singletons");
-        }
+    // Instantiate processors first
+    for (final name in podNames) {
+      final entry = await instantiateSingletonPod(name);
+      if (entry != null) {
+        final value = entry.value;
+        pods[entry.key] = value;
       }
     }
 
@@ -878,6 +834,124 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
           logger.trace("Successfully invoked onSingletonReady() for '$name'");
         }
       }
+    }
+  }
+
+  /// Attempts to pre-instantiate a singleton pod and returns its resolved instance.
+  ///
+  /// This method is used during container startup or refresh phases to eagerly
+  /// create all non-lazy singleton pods. It performs several validation checks
+  /// before instantiation and safely skips pods that should not or cannot be
+  /// created at this time.
+  ///
+  /// ### Behavior Overview
+  ///
+  /// The method proceeds through the following steps:
+  ///
+  /// 1. **Lookup merged pod definition**  
+  ///    Retrieves the effective pod definition for [podName]. If the definition
+  ///    is missing, a warning is logged and `null` is returned.
+  ///
+  /// 2. **Eligibility checks**  
+  ///    The pod is skipped if:
+  ///    - It is *abstract* and has no factory method (`isAbstractAndNoFactory()`), or  
+  ///    - It is not defined as a *singleton* (`!def.scope.isSingleton`)
+  ///
+  ///    These cases indicate the pod cannot or should not be instantiated
+  ///    directly.
+  ///
+  /// 3. **Lazy singletons**  
+  ///    If the pod's lifecycle is marked as `lazy`, it will not be created
+  ///    eagerly and is simply skipped.
+  ///
+  /// 4. **Provider pods**  
+  ///    If the pod is a provider, its *real* target pod name is resolved before
+  ///    invoking [getPod].
+  ///
+  /// 5. **Instantiation & error handling**  
+  ///    Attempts to create (or retrieve) the pod instance through [getPod].  
+  ///    - If the pod is already in creation (`PodCurrentlyInCreationException`),
+  ///      instantiation is skipped to avoid circular-creation conflicts.
+  ///    - Any other failure is logged and rethrown.
+  ///
+  /// ### Return Value
+  /// - Returns a [MapEntry] of the original [podName] and its instantiated
+  ///   singleton instance on success.
+  /// - Returns `null` if the pod is skipped or cannot be instantiated.
+  ///
+  /// ### Logging
+  /// - **TRACE** logs are emitted for all skip conditions.
+  /// - **WARN** logs are emitted when:
+  ///   - The definition is missing
+  ///   - Instantiation of an eligible singleton fails
+  ///
+  /// ### Example
+  /// ```dart
+  /// final entry = await instantiateSingletonPod("userService");
+  /// if (entry != null) {
+  ///   print("Pre-instantiated: ${entry.key} -> ${entry.value}");
+  /// }
+  /// ```
+  ///
+  /// ### Throws
+  /// - Re-throws any exception from [getPod] other than
+  ///   [PodCurrentlyInCreationException].
+  ///
+  /// ### See also
+  /// - [getPod]
+  /// - [isPodProvider]
+  /// - [podProviderName]
+  /// - [getLocalMergedPodDefinition]
+  Future<MapEntry<String, Object>?> instantiateSingletonPod(String podName) async {
+    try {
+      final def = getLocalMergedPodDefinition(podName);
+
+      // Must be singleton and instantiable
+      if (def.isAbstractAndNoFactory() || !def.scope.isSingleton) {
+        if (logger.getIsTraceEnabled()) {
+          logger.trace(
+            "Skipping pod '$podName': definition is not a singleton, "
+            "it's abstract with no factory or has non-singleton scope."
+          );
+        }
+        return null;
+      }
+
+      // Lazy singletons are skipped
+      final isLazy = def.lifecycle.isLazy == true;
+      if (isLazy) {
+        if (logger.getIsTraceEnabled()) {
+          logger.trace("Pod '$podName' is marked as lazy. Skipping pre-instantiation.");
+        }
+        return null;
+      }
+
+      // Provider pod?
+      final bool provider = await isPodProvider(podName);
+      final String realName = provider ? podProviderName(podName) : podName;
+
+      try {
+        final Object instance = await getPod(realName);
+        return MapEntry(podName, instance);
+      } on PodCurrentlyInCreationException catch (_) {
+        if (logger.getIsTraceEnabled()) {
+          logger.trace("Pod '$podName' is currently being created elsewhere. Skipping.");
+        }
+
+        return null;
+      } catch (e) {
+        if (logger.getIsWarnEnabled()) {
+          logger.warn("Failed to pre-instantiate singleton '$podName'", error: e);
+        }
+
+        rethrow;
+      }
+    } on NoSuchPodDefinitionException catch (_) {
+      if (logger.getIsWarnEnabled()) {
+        logger.warn("No definition found for '$podName' while pre-instantiating singletons");
+      }
+
+      return null;
     }
   }
 
@@ -923,16 +997,16 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
             );
           }
         } else {
-          if (_logger.getIsInfoEnabled()) {
-            _logger.info("Removing alias '$podName' for pod '$aliasedName' due to the registration of a new pod definition [$podDefinition] for pod '$podName'");
+          if (logger.getIsInfoEnabled()) {
+            logger.info("Removing alias '$podName' for pod '$aliasedName' due to the registration of a new pod definition [$podDefinition] for pod '$podName'");
           }
 
           removeAlias(podName);
         }
       }
 
-      if(_logger.getIsTraceEnabled()) {
-        _logger.trace("Pod definition '$podName' does not exist. Attempting registration");
+      if(logger.getIsTraceEnabled()) {
+        logger.trace("Pod definition '$podName' does not exist. Attempting registration");
       }
 
       if (podDefinition.name.isEmpty) {
@@ -993,16 +1067,16 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
 
     // 🔹 Special handling for ObjectFactory / ObjectProvider / (dart's class with the factory design)
     if (Class<ObjectFactory>(null, PackageNames.POD).isAssignableFrom(type) && !Class<ObjectProvider>(null, PackageNames.POD).isAssignableFrom(type)) {
-      return _DependencyObjectFactory<Object>(descriptor, this);
+      return ObjectFactoryDependency<Object>(descriptor, this);
     }
     
     if (Class<ObjectProvider>(null, PackageNames.POD).isAssignableFrom(type)) {
-      return _DependencyObjectProvider<Object>(descriptor, this);
+      return ObjectProviderDependency<Object>(descriptor, this);
     }
 
     // 3. Handle Optional<T>
     if (Class<Optional>(null, PackageNames.LANG).isAssignableFrom(type)) {
-      return await _DependencyOptional(this).resolve(descriptor);
+      return await OptionalDependency(this).resolve(descriptor);
     }
 
     if (lookup != null && lookup.isNotEmpty) {
@@ -1040,40 +1114,20 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
     
     // Handle Set<T>
     if (Class<Set>(null, PackageNames.DART).isAssignableFrom(type)) {
-      final result = await resolveMultipleCollectionPods(podName, descriptor, autowiredPods);
-      if (result is List) {
-        return Set<Object>.from(result).where((obj) => obj is! NullablePod).toSet();
-      }
-
-      return result != null ? Set<Object>.from([result]).where((obj) => obj is! NullablePod).toSet() : null;
+      final pods = await resolveMultipleCollectionPods(podName, descriptor, autowiredPods);
+      return AdaptableResolverDependency.resolveSet(type, podName, descriptor, autowiredPods, pods);
     }
     
     // Handle List<T> or arrays
     if (type.isArray() || Class<List>(null, PackageNames.DART).isAssignableFrom(type)) {
-      final result = await resolveMultipleCollectionPods(podName, descriptor, autowiredPods);
-      if (result is List) {
-        return List<Object>.from(result).where((obj) => obj is! NullablePod).toList();
-      }
-
-      return result != null ? List<Object>.from([result]).where((obj) => obj is! NullablePod).toList() : null;
+      final pods = await resolveMultipleCollectionPods(podName, descriptor, autowiredPods);
+      return AdaptableResolverDependency.resolveList(type, podName, descriptor, autowiredPods, pods);
     }
     
     // Handle Map<String, T>
     if (type.isKeyValuePaired() || Class<Map>(null, PackageNames.DART).isAssignableFrom(type)) {
-      final result = await resolveMultipleMappedPods(podName, descriptor, autowiredPods);
-      if (result is Map) {
-        final map = <String, Object>{};
-
-        for (final entry in result.entries) {
-          if (entry.value is! NullablePod) {
-            map[entry.key] = entry.value;
-          }
-        }
-
-        return map;
-      }
-
-      return result;
+      final pods = await resolveMultipleMappedPods(podName, descriptor, autowiredPods);
+      return AdaptableResolverDependency.resolveMap(type, podName, descriptor, autowiredPods, pods);
     }
 
     Map<String, Object> candidates = await findAutowireCandidates(podName, descriptor);
@@ -1329,6 +1383,7 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
       isEager: descriptor.isEager,
       isRequired: descriptor.isRequired
     ));
+
     if (matchingPods.isEmpty) {
       return null;
     }
@@ -1689,29 +1744,29 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
 
     if (existing.design.role.value < newD.design.role.value) {
       // Example: ROLE_APPLICATION overridden by ROLE_SUPPORT or ROLE_INFRASTRUCTURE
-      if (_logger.getIsInfoEnabled()) {
-        _logger.info(
+      if (logger.getIsInfoEnabled()) {
+        logger.info(
           "Pod definition override detected for '$podName': "
           "user-defined pod [$existing] replaced with framework pod [$newD]"
         );
       }
     } else if (newD != existing) {
-      if (explicitlyOverride || _logger.getIsInfoEnabled()) {
-        _logger.info(
+      if (explicitlyOverride || logger.getIsInfoEnabled()) {
+        logger.info(
           "Pod definition override detected for '$podName': "
           "existing definition [$existing] replaced with new definition [$newD]"
         );
       } else {
-        if (_logger.getIsTraceEnabled()) {
-          _logger.trace("Pod definition for '$podName' overridden: [$existing] → [$newD]");
+        if (logger.getIsTraceEnabled()) {
+          logger.trace("Pod definition for '$podName' overridden: [$existing] → [$newD]");
         }
       }
     } else {
-      if (explicitlyOverride || _logger.getIsInfoEnabled()) {
-        _logger.info("Pod definition override detected for '$podName': equivalent definitions replaced (no effective change)");
+      if (explicitlyOverride || logger.getIsInfoEnabled()) {
+        logger.info("Pod definition override detected for '$podName': equivalent definitions replaced (no effective change)");
       } else {
-        if (_logger.getIsTraceEnabled()) {
-          _logger.trace("Pod definition for '$podName' replaced with an equivalent definition (no changes)");
+        if (logger.getIsTraceEnabled()) {
+          logger.trace("Pod definition for '$podName' replaced with an equivalent definition (no changes)");
         }
       }
     }
@@ -1762,7 +1817,7 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
   /// {@template default_listable_pod_factory._get_aware_source_provider}
   /// Creates an order source provider aware of the factory and pods.
   /// 
-  /// This internal method creates an [_FactoryAwareOrderSourceProvider]
+  /// This internal method creates an [FactoryAwareOrderSourceProvider]
   /// that can provide order information for the specified pods.
   /// 
   /// [pods] the map of pods to create the source provider for
@@ -1775,7 +1830,7 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
       setOfPods[entry.value] = entry.key;
     }
 
-    return _FactoryAwareOrderSourceProvider(this, setOfPods);
+    return FactoryAwareOrderSourceProvider(this, setOfPods);
   }
 
   // Future<Object?> _resolve(Class requiredType, List<ArgumentValue>? args, bool returnNonUniqueAsNull) async {
@@ -1810,420 +1865,3 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
 /// Used internally for caching merged pod definitions with their metadata.
 /// {@endtemplate}
 typedef PodDefinitionHolder = (String name, PodDefinition definition, List<String> aliases);
-
-/// {@template dependency_object_factory}
-/// **Dependency Object Factory**
-///
-/// A specialized [ObjectFactory] that resolves and produces objects
-/// based on a [DependencyDescriptor]. It integrates with the
-/// [DefaultListablePodFactory] to perform resolution.
-///
-/// # Purpose
-/// - Bridges the gap between abstract dependency descriptors and actual
-///   pod instances.
-/// - Provides an [ObjectHolder] wrapper with additional metadata such as
-///   package and qualified class names.
-/// - Throws explicit exceptions when dependencies cannot be found.
-///
-/// # Behavior
-/// - Inspects the descriptor’s `type` to determine its `componentType()`.
-/// - Delegates resolution to [DefaultListablePodFactory.doResolveDependency].
-/// - Wraps the result in an [ObjectHolder].
-///
-/// # Example
-/// ```dart
-/// final descriptor = DependencyDescriptor(Database, "dbProperty", "mainDb");
-/// final factory = DefaultListablePodFactory();
-/// final objectFactory = DependencyObjectFactory<Database>(descriptor, factory);
-///
-/// final dbHolder = await objectFactory.get();
-/// print(dbHolder.getValue()); // Database instance
-/// ```
-///
-/// # Error Handling
-/// - Throws [PodDefinitionStoreException] if no pod of the given type is defined.
-/// - Ensures precise error messages with pod name and type information.
-/// {@endtemplate}
-final class _DependencyObjectFactory<T> extends ObjectFactory<T> {
-  /// The dependency metadata describing what is being resolved.
-  final DependencyDescriptor descriptor;
-
-  /// The backing pod factory used to resolve dependencies.
-  final DefaultListablePodFactory listablePodFactory;
-
-  /// {@macro dependency_object_factory}
-  _DependencyObjectFactory(this.descriptor, this.listablePodFactory);
-
-  @override
-  FutureOr<ObjectHolder<T>> get([List<ArgumentValue>? args]) async {
-    final type = descriptor.type;
-    final component = descriptor.component ?? type.componentType();
-
-    if (component != null) {
-      final result = await listablePodFactory.doResolveDependency(
-        DependencyDescriptor(
-          source: component,
-          podName: descriptor.propertyName,
-          propertyName: descriptor.podName,
-          type: component,
-          args: args,
-          lookup: descriptor.lookup
-        ),
-      );
-
-      if (result != null) {
-        final converted = listablePodFactory.convertIfNecessary(component.getName(), result, component);
-        return ObjectHolder(
-          converted,
-          packageName: component.getPackage()?.getName(),
-          qualifiedName: component.getQualifiedName(),
-        );
-      } else {
-        throw PodDefinitionStoreException(
-          name: component.getName(),
-          resourceDescription: null,
-          msg: "No pod of type '${component.getName()}' is defined",
-        );
-      }
-    }
-
-    throw PodDefinitionStoreException(
-      name: descriptor.podName,
-      resourceDescription: null,
-      msg: "Pod of type '$T' is not defined",
-    );
-  }
-}
-
-/// {@template dependency_object_provider}
-/// **Dependency Object Provider**
-///
-/// Extends [_DependencyObjectFactory] and implements [ObjectProvider].
-/// Designed for cases where multiple candidate pods of the same
-/// type may exist. Provides advanced lookup and iteration semantics.
-///
-/// # Purpose
-/// - Provides a stream-like view over multiple candidate pods.
-/// - Supports conditional retrieval: `getIfAvailable`, `getIfUnique`.
-/// - Supports consumer-based callbacks: `ifAvailable`, `ifUnique`.
-/// - Implements collection-like operations: iteration, `toList()`,
-///   `isEmpty`, `isNotEmpty`.
-///
-/// # Behavior
-/// - On creation, `_buildObjects` scans the factory for all pods of the
-///   given type, including those from ancestor contexts.
-/// - Wraps each resolved object in an [ObjectHolder] with class metadata.
-/// - Exposes them via [stream] and collection APIs.
-///
-/// # Example
-/// ```dart
-/// final provider = DependencyObjectProvider<Service>(descriptor, factory);
-///
-/// // Stream all matching pods
-/// await for (final holder in provider.stream()) {
-///   print(holder.getValue());
-/// }
-///
-/// // Get single pod if available
-/// final service = await provider.getIfAvailable();
-///
-/// // Execute only if unique
-/// await provider.ifUnique((s) => print("Unique service: ${s.getValue()}"));
-/// ```
-///
-/// # Error Handling
-/// - [getIfAvailable] rethrows [NoUniquePodDefinitionException] but suppresses
-///   [NoSuchPodDefinitionException].
-/// - [getIfUnique] suppresses [NoUniquePodDefinitionException] but rethrows
-///   [NoSuchPodDefinitionException].
-///
-/// # Notes
-/// - Objects are eagerly collected in `_buildObjects`.
-/// - `isEmpty` and `toList` delegate to the current stream state.
-/// {@endtemplate}
-final class _DependencyObjectProvider<T> extends _DependencyObjectFactory<T> implements ObjectProvider<T> {
-  /// All candidate object holders for this type.
-  List<ObjectHolder<T>> objects = [];
-
-  _DependencyObjectProvider(super.descriptor, super.listablePodFactory) {
-    _buildObjects();
-  }
-
-  /// Builds the initial list of objects by scanning listablePodFactory pods.
-  void _buildObjects() async {
-    final type = descriptor.type;
-    final component = descriptor.component ?? type.componentType();
-
-    if (component != null) {
-      final podsOfType = await PodUtils.podsOfTypeIncludingAncestors(
-        listablePodFactory,
-        component,
-        includeNonSingletons: true,
-        allowEagerInit: true,
-      );
-
-      for (final pod in podsOfType.entries) {
-        final name = pod.key;
-        final value = pod.value;
-        final cls = listablePodFactory.containsDefinition(name) ? listablePodFactory.getDefinition(name).type : null;
-        final converted = listablePodFactory.convertIfNecessary(name, value, component);
-
-        if (cls != null && converted is T) {
-          objects.add(ObjectHolder(
-            converted,
-            packageName: cls.getPackage()?.getName(),
-            qualifiedName: cls.getQualifiedName(),
-          ));
-        }
-      }
-    }
-  }
-
-  @override
-  GenericStream<ObjectHolder<T>> stream() {
-    return StreamSupport.stream(objects);
-  }
-
-  @override
-  Future<ObjectHolder<T>?> getIfAvailable([Supplier<ObjectHolder<T>>? supplier]) async {
-    ObjectHolder<T>? result;
-
-    try {
-      result = await get();
-    } on NoUniquePodDefinitionException catch (_) {
-      rethrow;
-    } on NoSuchPodDefinitionException catch (_) {
-      result = null;
-    }
-
-    return result ?? supplier?.call();
-  }
-
-  @override
-  Future<ObjectHolder<T>?> getIfUnique([Supplier<ObjectHolder<T>>? supplier]) async {
-    ObjectHolder<T>? result;
-
-    try {
-      result = await get();
-    } on NoUniquePodDefinitionException catch (_) {
-      result = null;
-    } on NoSuchPodDefinitionException catch (_) {
-      rethrow;
-    }
-
-    return result ?? supplier?.call();
-  }
-
-  @override
-  Future<void> ifAvailable(Consumer<ObjectHolder<T>> consumer) async {
-    final dependency = await getIfAvailable();
-    if (dependency != null) {
-      consumer.call(dependency);
-    }
-  }
-
-  @override
-  Future<void> ifUnique(Consumer<ObjectHolder<T>> consumer) async {
-    final dependency = await getIfUnique();
-    if (dependency != null) {
-      consumer.call(dependency);
-    }
-  }
-
-  @override
-  bool get isEmpty => toList().isEmpty;
-
-  @override
-  bool get isNotEmpty => !isEmpty;
-
-  @override
-  Iterator<T> iterator() => stream().map((e) => e.getValue()).iterator();
-
-  @override
-  List<T> toList() => stream().map((e) => e.getValue()).toList();
-}
-
-/// {@template dependency_optional}
-/// A private helper class within the Jetleaf framework that represents
-/// an optional dependency resolver.
-///
-/// This class acts as a wrapper around a [DefaultListablePodFactory]
-/// and provides the ability to resolve dependencies that may or may not
-/// be available at runtime.  
-///
-/// The primary use case is when a dependency should not be required,
-/// but can still be requested dynamically from the dependency container.  
-///
-/// This class always returns results wrapped inside an [Optional] to
-/// explicitly represent the presence or absence of a resolved value.
-///
-/// Key points:
-/// - Wraps dependency resolution logic with null-safety semantics.
-/// - Does not throw errors when a dependency is unavailable.
-/// - Plays a role in supporting optional bindings in the Jetleaf DI system.
-///
-/// {@endtemplate}
-final class _DependencyOptional {
-  /// {@template dependency_optional.factory}
-  /// The underlying factory responsible for creating and resolving pods
-  /// (dependency instances).
-  ///
-  /// It is used internally by [_DependencyOptional] to perform actual
-  /// resolution calls to the Jetleaf container.
-  ///
-  /// This field is final and cannot be reassigned after initialization.
-  /// {@endtemplate}
-  final DefaultListablePodFactory factory;
-
-  /// {@macro dependency_optional}
-  ///
-  /// Creates a new [_DependencyOptional] tied to a specific
-  /// [DefaultListablePodFactory].
-  ///
-  /// - [factory]: The pod factory that will handle resolution.
-  _DependencyOptional(this.factory);
-
-  /// {@template dependency_optional.resolve}
-  /// Attempts to resolve an optional dependency described by [descriptor].
-  ///
-  /// This method will:
-  /// 1. Determine the component type from the [descriptor].
-  /// 2. If no component type is found, return an empty [Optional].
-  /// 3. Otherwise, request the dependency from the [factory].
-  /// 4. Wrap the result inside an [Optional] to indicate presence or absence.
-  ///
-  /// ### Example
-  /// ```dart
-  /// final optional = _DependencyOptional(factory);
-  /// final result = await optional.resolve(
-  ///   DependencyDescriptor(MyService, 'myPod', 'myProperty', MyService)
-  /// );
-  /// if (result.isPresent) {
-  ///   print('Dependency found: ${result.get()}');
-  /// } else {
-  ///   print('Dependency not available.');
-  /// }
-  /// ```
-  ///
-  /// - Returns: An [Optional] containing the resolved dependency if present,
-  ///   or an empty [Optional] otherwise.
-  /// {@endtemplate}
-  Future<Optional<Object>> resolve(DependencyDescriptor descriptor) async {
-    final component = descriptor.component ?? descriptor.type.componentType();
-    if (component == null) {
-      return Optional.ofNullable(null);
-    }
-
-    final result = await factory.resolveDependency(
-      DependencyDescriptor(
-        source: component,
-        podName: descriptor.podName,
-        propertyName: descriptor.propertyName,
-        type: component,
-        lookup: descriptor.lookup
-      ),
-    );
-  
-    return Optional.ofNullable(result);
-  }
-}
-
-/// {@template factory_aware_order_source_provider}
-/// An [OrderSourceProvider] implementation that is aware of the container’s
-/// [DefaultListablePodFactory].
-///
-/// This provider bridges between **pod definitions** and the **ordering system**
-/// used by dependency resolution, sorting, and prioritization (e.g. in
-/// autowiring or lifecycle processing).
-///
-/// # Behavior
-/// - Maintains a map of object → pod name ([podNames]).
-/// — When asked for the order of a given [obj], it resolves the pod definition
-///   from the factory.
-/// - If the pod’s design metadata specifies an `order`, wraps it in a
-///   [_SimplyOrdered] and returns it.
-/// - If no mapping or order is found, returns `null`.
-///
-/// # Use Cases
-/// - Allows container-managed objects to participate in ordered resolution.
-/// - Supports ordered-like semantics by tying the order back to pod metadata rather than the raw object itself.
-///
-/// # Parameters
-/// - [factory]: The backing [DefaultListablePodFactory] for definition lookups.
-/// - [podNames]: A mapping of object instances to their logical pod names.
-///
-/// # Notes
-/// - Only provides order information for pods that are known in [podNames].
-/// - This is typically wired into the container’s dependency comparator logic.
-/// {@endtemplate}
-final class _FactoryAwareOrderSourceProvider implements OrderSourceProvider {
-  /// The factory to use for definition lookups.
-  final DefaultListablePodFactory factory;
-  
-  /// The mapping of object instances to their logical pod names.
-  final Map<Object, String> podNames;
-
-  /// {@macro factory_aware_order_source_provider}
-  _FactoryAwareOrderSourceProvider(this.factory, this.podNames);
-  
-  @override
-  Object? getOrderSource(Object obj) {
-    final name = podNames[obj];
-    if (name != null) {
-      final sources = <Object?>[];
-      final definition = factory.getMergedPodDefinition(name);
-
-      final order = definition.design.order;
-      if (order != null) {
-        sources.add(_SimplyOrdered(order));
-      } else {
-        final factoryMethod = definition.factoryMethod.getFactoryMethod();
-        if (factoryMethod != null) {
-          sources.add(factoryMethod);
-        } else {
-          final cls = definition.type;
-          if (cls != obj.getClass()) {
-            sources.add(cls);
-          }
-        }
-      }
-      
-      return sources;
-    }
-
-    return null;
-  }
-}
-
-/// {@template simply_ordered}
-/// A lightweight implementation of [Ordered] that wraps a fixed `order` value.
-///
-/// # Behavior
-/// - Returns the given [order] integer directly from [getOrder].
-/// - Useful as a simple adapter when only an explicit order is provided
-///   (e.g. from pod metadata or design annotations).
-///
-/// # Example
-/// ```dart
-/// final ordered = SimplyOrdered(10);
-/// print(ordered.getOrder()); // 10
-/// ```
-///
-/// # Notes
-/// - Lower order values generally indicate higher priority in resolution.
-/// - Often used in conjunction with [_FactoryAwareOrderSourceProvider].
-/// {@endtemplate}
-final class _SimplyOrdered implements Ordered {
-  /// {@template simply_ordered.order}
-  /// The order value.
-  /// 
-  /// Lower values indicate higher priority in dependency resolution ordering.
-  /// {@endtemplate}
-  final int order;
-
-  /// {@macro simply_ordered}
-  _SimplyOrdered(this.order);
-
-  @override
-  int getOrder() => order;
-}

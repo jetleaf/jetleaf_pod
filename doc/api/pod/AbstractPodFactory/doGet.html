@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="description" content="API docs for the doGet method from the AbstractPodFactory class, for the Dart programming language.">
+  <title>doGet method - AbstractPodFactory class - pod library - Dart API</title>
+
+
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../../static-assets/github.css?v1">
+  <link rel="stylesheet" href="../../static-assets/styles.css?v1">
+  <link rel="icon" href="../../static-assets/favicon.png?v1">
+  
+</head>
+
+<body data-base-href="../../" data-using-base-href="false" class="light-theme">
+<div id="overlay-under-drawer"></div>
+<header id="title">
+  <span id="sidenav-left-toggle" class="material-symbols-outlined" role="button" tabindex="0">menu</span>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod.dart</a></li>
+    <li><a href="../../pod/AbstractPodFactory-class.html">AbstractPodFactory</a></li>
+    <li class="self-crumb">doGet method</li>
+  </ol>
+  <div class="self-name">doGet</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+  <button class="toggle" id="theme-button" title="Toggle between light and dark mode" aria-label="Light and dark mode toggle">
+    <span id="dark-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      dark_mode
+    </span>
+    <span id="light-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      light_mode
+    </span>
+  </button>
+</header>
+<main>
+<div
+    id="dartdoc-main-content"
+    class="main-content"
+    data-above-sidebar="pod&#47;AbstractPodFactory-class-sidebar.html"
+    data-below-sidebar="">
+    <div>
+<h1><span class="kind-method">doGet</span> method 
+</h1></div>
+
+    <section class="multi-line-signature">
+      
+  <div>
+    <ol class="annotation-list">
+        <li>@<a href="https://pub.dev/documentation/meta/1.17.0/meta/protected-constant.html">protected</a></li>
+    </ol>
+  </div>
+<span class="returntype"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Future-class.html">Future</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Object-class.html">Object</a></span>&gt;</span></span>
+<span class="name ">doGet</span>(<wbr><ol class="parameter-list"> <li><span class="parameter" id="doGet-param-name"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span> <span class="parameter-name">name</span>, </span></li>
+<li><span class="parameter" id="doGet-param-type"><span class="type-annotation">Class<span class="signature">&lt;<wbr><span class="type-parameter"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Object-class.html">Object</a></span>&gt;</span>?</span> <span class="parameter-name">type</span>, </span></li>
+<li><span class="parameter" id="doGet-param-args"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/List-class.html">List</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="../../pod/ArgumentValue-class.html">ArgumentValue</a></span>&gt;</span>?</span> <span class="parameter-name">args</span>, [</span></li>
+<li><span class="parameter" id="doGet-param-prototypeInSingleton"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a></span> <span class="parameter-name">prototypeInSingleton</span> = <span class="default-value">false</span>, </span></li>
+</ol>])
+
+      
+
+    </section>
+    
+<section class="desc markdown">
+  <p>Main template method for pod retrieval that implements the core resolution algorithm.</p>
+<p>This method is the heart of the pod factory system, handling:</p>
+<ol>
+<li>Pod name transformation and alias resolution</li>
+<li>Singleton cache lookup</li>
+<li>Parent factory delegation for hierarchical lookups</li>
+<li>Dependency resolution and circular dependency detection</li>
+<li>Scope-based pod creation (singleton, prototype, custom scopes)</li>
+<li>PodProvider unwrapping and instance creation</li>
+</ol>
+<p>Usage Example:</p>
+<pre class="language-dart"><code class="language-dart">final pod = await doGet('myService', Class.forObject(MyService), null);
+</code></pre>
+<p><code>name</code> the name of the pod to retrieve
+<code>type</code> the expected type of the pod (optional)
+<code>args</code> constructor arguments for the pod (optional)
+Returns the retrieved pod instance</p>
+<p>Throws <a href="../../pod/PodCurrentlyInCreationException-class.html">PodCurrentlyInCreationException</a> for circular dependencies
+Throws <a href="../../pod/PodCreationException-class.html">PodCreationException</a> for pod creation failures</p>
+</section>
+
+
+    
+<section class="summary source-code" id="source">
+  <h2><span>Implementation</span></h2>
+  <pre class="language-dart"><code class="language-dart">@protected
+Future&lt;Object&gt; doGet(String name, Class&lt;Object&gt;? type, List&lt;ArgumentValue&gt;? args, [bool prototypeInSingleton = false]) async {
+  Object instance;
+
+  final transformed = transformedPodName(name);
+  ObjectHolder&lt;Object&gt;? cache = await getSingletonCache(transformed); &#47;&#47; Check singleton cache first
+  Object? shared = cache?.getValue();
+
+  if (shared != null &amp;&amp; args == null &amp;&amp; cache != null) {
+    if (logger.getIsTraceEnabled()) {
+      if (isCurrentlyCreatingSingleton(transformed)) {
+        logger.trace(&quot;Returning eagerly cached instance of singleton pod &#39;$transformed&#39; that is not fully initialized yet - a consequence of a circular reference&quot;);
+      } else {
+        logger.trace(&quot;Returning cached instance of singleton pod &#39;$transformed&#39;&quot;);
+      }
+    }
+
+    instance = await doGetObject(shared, type, name, transformed, null);
+  } else {
+    &#47;&#47; Fail if we&#39;re already creating this pod instance: We&#39;re assumably within a circular reference.
+    if (isCurrentlyCreatingPrototype(transformed)) {
+      throw PodCurrentlyInCreationException(name: transformed);
+    }
+
+    &#47;&#47; Check if pod definition exists in this provider.
+    PodFactory? parent = getParentFactory();
+
+    if (parent != null &amp;&amp; !containsDefinition(transformed)) {
+      String lookup = PodUtils.originalName(name); &#47;&#47; Not found -&gt; check parent.
+
+      if (parent is AbstractPodFactory) {
+        return await parent.doGet(lookup, type, args);
+      } else if (args != null) {
+        &#47;&#47; Delegation to parent with explicit args.
+        if (type == null) {
+          return await parent.getPod(lookup, args);
+        } else {
+          return await parent.get(type, args);
+        }
+      } else {
+        &#47;&#47; No args -&gt; delegate to standard getPod method.
+        if (type != null) {
+          return await parent.get(type);
+        }
+        return await parent.getPod(lookup);
+      }
+    } else {
+      markPodAsCreated(transformed);
+
+      StartupStep createStep = _applicationStartup.start(STARTUP_STEP_INSTANTIATE_POD).tag(&quot;name&quot;, value: name);
+
+      try {
+        if (type != null) {
+          createStep.tag(&quot;podType&quot;, value: type.toString());
+        }
+
+        final merged = getLocalMergedPodDefinition(transformed);
+        type ??= Class.fromQualifiedName&lt;Object&gt;(merged.type.getQualifiedName());
+
+        checkMergedPodDefinition(merged, transformed, args);
+
+        &#47;&#47; Guarantee initialization of pods that the current pod depends on.
+        List&lt;DependencyDesign&gt; dependsOn = merged.dependsOn;
+        if (dependsOn.isNotEmpty) {
+          for (DependencyDesign dep in dependsOn) {
+            final depName = dep.name;
+            final depType = dep.type;
+
+            String? dependency;
+            if (depType != null) {
+              dependency = getDefinitionByClass(depType).name;
+            } else if (depName != null) {
+              dependency = depName;
+            }
+
+            if (dependency == null) {
+              continue;
+            }
+
+            if (isDependent(transformed, dependency)) {
+              throw PodCreationException.withResource(
+                merged.description,
+                transformed,
+                &quot;Circular depends-on relationship between &#39;$transformed&#39; and &#39;$dep&#39;&quot;,
+              );
+            }
+
+            registerDependentPod(dependency, transformed);
+            try {
+              await doGet(dependency, null, null, dep.prototypeInSingleton);
+            } on NoSuchPodDefinitionException catch (ex) {
+              throw PodCreationException.withResource(
+                merged.description,
+                transformed,
+                &quot;$transformed depends on missing pod $dep&quot;,
+                cause: ex,
+              );
+            } on PodCreationException catch (ex) {
+              throw PodCreationException.withResource(
+                merged.description,
+                transformed,
+                &quot;Failed to initialize dependency &#39;${(ex.getPodName() ?? &quot;&quot;)}&#39; of ${type.getSimpleName()} pod &#39;$transformed&#39;&quot;,
+                cause: ex,
+              );
+            }
+          }
+        }
+
+        &#47;&#47; If a pod instance is already available, return it.
+        if (merged.instance != null) {
+          if (type.isInstance(merged.instance)) {
+            return convertIfNecessary(name, merged.instance!, type);
+          } else if (merged.type.isInstance(merged.instance)) {
+            return convertIfNecessary(name, merged.instance!, merged.type);
+          }
+        }
+
+        &#47;&#47; Create pod instance
+        if (merged.scope.isSingleton &amp;&amp; !prototypeInSingleton) {
+          Future&lt;ObjectHolder&lt;Object&gt;&gt; create() async {
+            try {
+              return ObjectHolder(
+                await doCreate(transformed, merged, args),
+                packageName: type?.getPackage()?.getName(),
+                qualifiedName: type?.getQualifiedName(),
+              );
+            } on PodException catch (_) {
+              &#47;&#47; Explicitly remove instance from singleton cache: It might have been put there
+              &#47;&#47; eagerly by the creation process, to allow for circular reference resolution.
+              &#47;&#47; Also remove any pods that received a temporary reference to the pod.
+              destroySingleton(transformed);
+              rethrow;
+            }
+          }
+
+          final creator = SimpleObjectFactory&lt;Object&gt;(([args]) async =&gt; create());
+          shared = await getSingleton(transformed, factory: creator);
+
+          if (shared == null) {
+            throw PodCreationException.withResource(
+              merged.description,
+              transformed,
+              &quot;Failed to create singleton pod &#39;$transformed&#39;&quot;,
+            );
+          }
+
+          instance = await doGetObject(shared, type, name, transformed, merged);
+        } else if (merged.scope.isPrototype || prototypeInSingleton) {
+          &#47;&#47; It&#39;s a prototype -&gt; create a new instance.
+          Object prototype;
+          try {
+            beforePrototypeCreation(transformed);
+            prototype = await doCreate(transformed, merged, args);
+          } finally {
+            afterPrototypeCreation(transformed);
+          }
+
+          instance = await doGetObject(prototype, type, name, transformed, merged);
+        } else {
+          final scopeName = merged.scope.type;
+
+          if (scopeName.isEmpty) {
+            throw IllegalStateException(&quot;No scope name defined for pod &#39;$transformed&#39;&quot;);
+          } else {
+            final scope = _scopes[scopeName];
+            if (scope == null) {
+              throw PodException(&#39;No Scope registered for scope name: $scopeName&#39;);
+            } else {
+              try {
+                Future&lt;ObjectHolder&lt;Object&gt;&gt; create() async {
+                  beforePrototypeCreation(transformed);
+
+                  try {
+                    return ObjectHolder(
+                      await doCreate(transformed, merged, args),
+                      packageName: type?.getPackage()?.getName(),
+                      qualifiedName: type?.getQualifiedName(),
+                    );
+                  } finally {
+                    afterPrototypeCreation(transformed);
+                  }
+                }
+
+                final result = await scope.get(transformed, SimpleObjectFactory(([args]) async =&gt; create()));
+                shared = result.getValue();
+
+                instance = await doGetObject(result.getValue(), type, name, transformed, merged);
+              } on IllegalStateException catch (ex) {
+                throw ScopeNotActiveException(transformed, scopeName, ex);
+              }
+            }
+          }
+        }
+      } on PodException catch (ex) {
+        createStep.tag(&quot;exception&quot;, value: ex.getClass().toString());
+        createStep.tag(&quot;message&quot;, value: ex.getMessage());
+        cleanupAfterPodCreationFailure(transformed);
+        rethrow;
+      } finally {
+        createStep.end();
+        if (!isCachePodMetadata()) {
+          clearMergedPodDefinition(transformed);
+        }
+      }
+    }
+  }
+
+  return convertIfNecessary(name, instance, type);
+}</code></pre>
+</section>
+
+
+  </div> <!-- /.main-content -->
+  <div id="dartdoc-sidebar-left" class="sidebar sidebar-offcanvas-left">
+    <!-- The search input and breadcrumbs below are only responsively visible at low resolutions. -->
+<header id="header-search-sidebar" class="hidden-l">
+  <form class="search-sidebar" role="search">
+    <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+<ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod</a></li>
+    <li><a href="../../pod/AbstractPodFactory-class.html">AbstractPodFactory</a></li>
+    <li class="self-crumb">doGet method</li>
+</ol>
+
+    <h5>AbstractPodFactory class</h5>
+    <div id="dartdoc-sidebar-left-content"></div>
+  </div><!--/.sidebar-offcanvas-->
+  <div id="dartdoc-sidebar-right" class="sidebar sidebar-offcanvas-right">
+</div><!--/.sidebar-offcanvas-->
+</main>
+<footer>
+  <span class="no-break">
+    jetleaf_pod
+      1.0.0+2
+  </span>
+  
+</footer>
+
+
+<script src="../../static-assets/highlight.pack.js?v1"></script>
+<script src="../../static-assets/docs.dart.js"></script>
+
+</body>
+</html>
+

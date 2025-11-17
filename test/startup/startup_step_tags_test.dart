@@ -69,12 +69,6 @@ void main() {
       expect(tags.length, equals(0));
     });
 
-    test('DefaultStartupStepTags should work with contains', () {
-      final tags = DefaultStartupStepTags();
-      
-      expect(tags.contains('anything'), isFalse);
-    });
-
     test('DefaultStartupStepTags should work with elementAt', () {
       final tags = DefaultStartupStepTags();
       

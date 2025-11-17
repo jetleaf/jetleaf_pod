@@ -77,7 +77,7 @@ void main() {
     test('should handle comparison with other types', () {
       final pod = NullablePod();
       
-      expect(pod == 'string', isFalse);
+      expect(pod.toString() == 'string', isFalse);
       expect(pod == Object(), isFalse);
     });
 

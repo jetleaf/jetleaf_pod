@@ -42,11 +42,7 @@ abstract class ConvertibleValue extends ObjectHolder<Object?> {
   /// 
   /// [value]: The original raw value to be stored and potentially converted
   /// [qualifiedName]: The qualified name of the property
-  ConvertibleValue(Object? value, {String? packageName, String? qualifiedName}) : super(
-    value,
-    packageName: packageName,
-    qualifiedName: qualifiedName,
-  );
+  ConvertibleValue(super.value, {super.packageName, super.qualifiedName});
 
   /// {@template convertible_value_converted_value}
   /// The converted value after type transformation has been applied.
@@ -97,7 +93,7 @@ abstract class ConvertibleValue extends ObjectHolder<Object?> {
   /// {@endtemplate}
   void setConvertedValue(Object? convertedValue) {
     _converted = true;
-    this._convertedValue = convertedValue;
+    _convertedValue = convertedValue;
   }
 
   @override
@@ -263,6 +259,7 @@ abstract class PropertyValues extends Iterable<PropertyValue> {
   /// print(props.contains('missing')); // false
   /// ```
   /// {@endtemplate}
+  @override
   bool contains(Object? value) {
     if(value is! String) {
       return false;
@@ -285,6 +282,7 @@ abstract class PropertyValues extends Iterable<PropertyValue> {
   /// print(populatedProps.isEmpty); // false
   /// ```
   /// {@endtemplate}
+  @override
   bool get isEmpty;
 }
 

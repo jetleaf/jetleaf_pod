@@ -34,7 +34,7 @@ class TestDisposablePod implements DisposablePod {
   String getPackageName() => 'test.package';
 }
 
-class TestAutoCloseable implements AutoCloseable {
+class TestAutoCloseable implements Closeable {
   bool closed = false;
 
   @override
@@ -43,7 +43,7 @@ class TestAutoCloseable implements AutoCloseable {
   }
 }
 
-class TestBoth implements DisposablePod, AutoCloseable {
+class TestBoth implements DisposablePod, Closeable {
   bool destroyed = false;
   bool closed = false;
 

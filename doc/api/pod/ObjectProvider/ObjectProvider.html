@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="description" content="API docs for the ObjectProvider.new constructor from Class ObjectProvider from the pod library, for the Dart programming language.">
+  <title>ObjectProvider.new constructor - ObjectProvider - pod library - Dart API</title>
+
+
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../../static-assets/github.css?v1">
+  <link rel="stylesheet" href="../../static-assets/styles.css?v1">
+  <link rel="icon" href="../../static-assets/favicon.png?v1">
+  
+</head>
+
+<body data-base-href="../../" data-using-base-href="false" class="light-theme">
+<div id="overlay-under-drawer"></div>
+<header id="title">
+  <span id="sidenav-left-toggle" class="material-symbols-outlined" role="button" tabindex="0">menu</span>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod.dart</a></li>
+    <li><a href="../../pod/ObjectProvider-class.html">ObjectProvider<span class="signature">&lt;<wbr><span class="type-parameter">T</span>&gt;</span></a></li>
+    <li class="self-crumb">ObjectProvider.new const constructor</li>
+  </ol>
+  <div class="self-name">ObjectProvider.new</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+  <button class="toggle" id="theme-button" title="Toggle between light and dark mode" aria-label="Light and dark mode toggle">
+    <span id="dark-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      dark_mode
+    </span>
+    <span id="light-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      light_mode
+    </span>
+  </button>
+</header>
+<main>
+  <div
+      id="dartdoc-main-content"
+      class="main-content"
+      data-above-sidebar="pod&#47;ObjectProvider-class-sidebar.html"
+      data-below-sidebar="">
+      <div>
+<h1><span class="kind-constructor">ObjectProvider&lt;<wbr><span class="type-parameter">T</span>&gt;</span> constructor 
+</h1></div>
+
+    <section class="multi-line-signature">
+      const
+      <span class="name ">ObjectProvider&lt;<wbr><span class="type-parameter">T</span>&gt;</span>(<wbr>)
+    </section>
+    
+<section class="desc markdown">
+  <p>A flexible, functional-style provider interface for retrieving and interacting with
+pods or objects of a particular type.</p>
+<p>This is an extension of <a href="../../pod/ObjectFactory-class.html">ObjectFactory</a> and <a href="https://api.dart.dev/stable/3.9.2/dart-core/Iterable-class.html">Iterable</a> that provides advanced options
+for conditional retrieval, functional callbacks, filtering, and ordering.</p>
+<hr>
+<h3 id="-usage">🚀 Usage</h3>
+<pre class="language-dart"><code class="language-dart">final ObjectProvider&lt;MyService&gt; provider = ...;
+
+// Get the object, or throw if none or multiple exist
+MyService service = provider.getObject();
+
+// Get if available, or null if none exist
+MyService? maybeService = provider.getIfAvailable();
+
+// Get a default if not present
+MyService service = provider.getIfAvailableOrDefault(() =&gt; MyService());
+
+// Use a consumer if available
+provider.ifAvailable((s) =&gt; s.start());
+
+// Stream through all instances
+provider.stream().forEach(print);
+</code></pre>
+<hr>
+<h3 id="-filtering-and-ordering">🔍 Filtering and Ordering</h3>
+<p>You can stream all matching pods ordered by <code>Ordered</code> or <code>PriorityOrdered</code>:</p>
+<pre class="language-dart"><code class="language-dart">provider.orderedStream().forEach(print);
+</code></pre>
+<p>Or with a custom type filter (using your <code>Class&lt;T&gt;</code> metadata):</p>
+<pre class="language-dart"><code class="language-dart">provider.orderedStreamWithFilter((clazz) =&gt; clazz.name.contains('MyType'));
+</code></pre>
+<p>Note: By default, non-singletons are included. Support for filtering them is not yet implemented.</p>
+</section>
+
+
+    
+<section class="summary source-code" id="source">
+  <h2><span>Implementation</span></h2>
+  <pre class="language-dart"><code class="language-dart">const ObjectProvider();</code></pre>
+</section>
+
+
+  </div> <!-- /.main-content -->
+  <div id="dartdoc-sidebar-left" class="sidebar sidebar-offcanvas-left">
+    <!-- The search input and breadcrumbs below are only responsively visible at low resolutions. -->
+<header id="header-search-sidebar" class="hidden-l">
+  <form class="search-sidebar" role="search">
+    <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+<ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod</a></li>
+    <li><a href="../../pod/ObjectProvider-class.html">ObjectProvider<span class="signature">&lt;<wbr><span class="type-parameter">T</span>&gt;</span></a></li>
+    <li class="self-crumb">ObjectProvider.new const constructor</li>
+</ol>
+
+    <h5>ObjectProvider class</h5>
+    <div id="dartdoc-sidebar-left-content"></div>
+  </div><!--/.sidebar-offcanvas-left-->
+  <div id="dartdoc-sidebar-right" class="sidebar sidebar-offcanvas-right">
+  </div><!--/.sidebar-offcanvas-->
+</main>
+<footer>
+  <span class="no-break">
+    jetleaf_pod
+      1.0.0+2
+  </span>
+  
+</footer>
+
+
+<script src="../../static-assets/highlight.pack.js?v1"></script>
+<script src="../../static-assets/docs.dart.js"></script>
+
+</body>
+</html>
+

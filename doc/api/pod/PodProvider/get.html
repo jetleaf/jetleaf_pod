@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="description" content="API docs for the get method from the PodProvider class, for the Dart programming language.">
+  <title>get method - PodProvider class - pod library - Dart API</title>
+
+
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../../static-assets/github.css?v1">
+  <link rel="stylesheet" href="../../static-assets/styles.css?v1">
+  <link rel="icon" href="../../static-assets/favicon.png?v1">
+  
+</head>
+
+<body data-base-href="../../" data-using-base-href="false" class="light-theme">
+<div id="overlay-under-drawer"></div>
+<header id="title">
+  <span id="sidenav-left-toggle" class="material-symbols-outlined" role="button" tabindex="0">menu</span>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod.dart</a></li>
+    <li><a href="../../pod/PodProvider-class.html">PodProvider<span class="signature">&lt;<wbr><span class="type-parameter">T</span>&gt;</span></a></li>
+    <li class="self-crumb">get abstract method</li>
+  </ol>
+  <div class="self-name">get</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+  <button class="toggle" id="theme-button" title="Toggle between light and dark mode" aria-label="Light and dark mode toggle">
+    <span id="dark-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      dark_mode
+    </span>
+    <span id="light-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      light_mode
+    </span>
+  </button>
+</header>
+<main>
+<div
+    id="dartdoc-main-content"
+    class="main-content"
+    data-above-sidebar="pod&#47;PodProvider-class-sidebar.html"
+    data-below-sidebar="">
+    <div>
+<h1><span class="kind-method">get</span> abstract method 
+</h1></div>
+
+    <section class="multi-line-signature">
+      
+<span class="returntype"><a href="https://api.dart.dev/stable/3.9.2/dart-async/FutureOr-class.html">FutureOr</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="../../pod/ObjectHolder-class.html">ObjectHolder</a><span class="signature">&lt;<wbr><span class="type-parameter">T</span>&gt;</span>?</span>&gt;</span></span>
+<span class="name ">get</span>(<wbr>[<ol class="parameter-list single-line"> <li><span class="parameter" id="get-param-requiredType"><span class="type-annotation">Class?</span> <span class="parameter-name">requiredType</span></span></li>
+</ol>])
+
+      
+
+    </section>
+    
+<section class="desc markdown">
+  <p>Interface for objects that are themselves factories for other objects.</p>
+<p>This interface is used when you need more control over object creation than
+simple instantiation provides. PodProvider can create objects dynamically,
+perform complex initialization, or return different instances based on
+configuration or runtime conditions.</p>
+<p>PodProvider is a powerful pattern for:</p>
+<ul>
+<li>Creating objects that require complex initialization</li>
+<li>Returning different implementations based on configuration</li>
+<li>Integrating with external libraries or legacy code</li>
+<li>Creating proxy objects or decorators</li>
+</ul>
+<h2 id="key-concepts">Key Concepts</h2>
+<ul>
+<li><strong>Object Creation</strong>: The <a href="../../pod/PodProvider/get.html">get</a> method creates and returns the actual object</li>
+<li><strong>Type Information</strong>: The <a href="../../pod/PodProvider/getClass.html">getClass</a> method provides type information for dependency injection</li>
+<li><strong>Lifecycle</strong>: The <a href="../../pod/PodProvider/isSingleton.html">isSingleton</a> method controls whether the same instance is returned each time</li>
+</ul>
+<h2 id="usage">Usage</h2>
+<p>Implement this interface to create custom factory pods:</p>
+<pre class="language-dart"><code class="language-dart">class DatabaseConnectionFactory implements PodProvider&lt;DatabaseConnection&gt; {
+  final String connectionUrl;
+  final String username;
+  final String password;
+  
+  DatabaseConnectionFactory(this.connectionUrl, this.username, this.password);
+  
+  @override
+  ObjectHolder&lt;DatabaseConnection&gt;? get() {
+    return DatabaseConnection.create(
+      url: connectionUrl,
+      username: username,
+      password: password,
+    );
+  }
+  
+  @override
+  Class? getClass() =&gt; Class&lt;DatabaseConnection&gt;();
+  
+  @override
+  bool isSingleton() =&gt; true; // Reuse the same connection
+}
+</code></pre>
+<h2 id="registration">Registration</h2>
+<p>Factory pods are registered like normal pods:</p>
+<pre class="language-dart"><code class="language-dart">@Pod
+DatabaseConnectionFactory databaseConnectionFactory() {
+  return DatabaseConnectionFactory(
+    'jdbc:postgresql://localhost:5432/mydb',
+    'user',
+    'password',
+  );
+}
+</code></pre>
+<h2 id="accessing-factory-vs-product">Accessing Factory vs Product</h2>
+<ul>
+<li>To get the product: <code>context.getPod&lt;DatabaseConnection&gt;()</code></li>
+<li>To get the factory: <code>context.getPod&lt;PodProvider&gt;('&amp;databaseConnectionFactory')</code></li>
+</ul>
+<p>Creates and returns an instance of the object this factory manages.</p>
+<p>This method is called by the container when a pod of type <code>T</code> is requested.
+The implementation should create and configure the object as needed.</p>
+<h2 id="return-value">Return Value</h2>
+<ul>
+<li>Returns an instance of type <code>T</code>, or <code>null</code> if the object cannot be created</li>
+<li>For singleton factories, the same instance should be returned on subsequent calls</li>
+<li>For prototype factories, a new instance should be created each time</li>
+</ul>
+<h2 id="example">Example</h2>
+<pre class="language-dart"><code class="language-dart">@override
+ObjectHolder&lt;DatabaseConnection&gt;? get() {
+  final service = MyService();
+  service.initialize(configurationProperties);
+  return ObjectHolder(service);
+}
+</code></pre>
+<h2 id="error-handling">Error Handling</h2>
+<p>If object creation fails, this method can:</p>
+<ul>
+<li>Return <code>null</code> to indicate failure</li>
+<li>Throw an exception with details about the failure</li>
+</ul>
+<pre class="language-dart"><code class="language-dart">@override
+Future&lt;ObjectHolder&lt;DatabaseConnection&gt;?&gt; get() async {
+  try {
+    return ObjectHolder(DatabaseConnection.connect(connectionString));
+  } catch (e) {
+    throw PodCreationException('Failed to create database connection: $e');
+  }
+}
+</code></pre>
+</section>
+
+
+    
+<section class="summary source-code" id="source">
+  <h2><span>Implementation</span></h2>
+  <pre class="language-dart"><code class="language-dart">FutureOr&lt;ObjectHolder&lt;T&gt;?&gt; get([Class? requiredType]);</code></pre>
+</section>
+
+
+  </div> <!-- /.main-content -->
+  <div id="dartdoc-sidebar-left" class="sidebar sidebar-offcanvas-left">
+    <!-- The search input and breadcrumbs below are only responsively visible at low resolutions. -->
+<header id="header-search-sidebar" class="hidden-l">
+  <form class="search-sidebar" role="search">
+    <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+<ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod</a></li>
+    <li><a href="../../pod/PodProvider-class.html">PodProvider<span class="signature">&lt;<wbr><span class="type-parameter">T</span>&gt;</span></a></li>
+    <li class="self-crumb">get abstract method</li>
+</ol>
+
+    <h5>PodProvider class</h5>
+    <div id="dartdoc-sidebar-left-content"></div>
+  </div><!--/.sidebar-offcanvas-->
+  <div id="dartdoc-sidebar-right" class="sidebar sidebar-offcanvas-right">
+</div><!--/.sidebar-offcanvas-->
+</main>
+<footer>
+  <span class="no-break">
+    jetleaf_pod
+      1.0.0+2
+  </span>
+  
+</footer>
+
+
+<script src="../../static-assets/highlight.pack.js?v1"></script>
+<script src="../../static-assets/docs.dart.js"></script>
+
+</body>
+</html>
+

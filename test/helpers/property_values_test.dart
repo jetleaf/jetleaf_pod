@@ -82,9 +82,9 @@ void main() {
       ];
       final pvs = TestPropertyValues(properties);
       
-      expect(pvs.contains('prop1'), isTrue);
-      expect(pvs.contains('nonexistent'), isFalse);
-      expect(pvs.contains(123), isFalse); // Non-string values
+      expect(pvs.containsProperty('prop1'), isTrue);
+      expect(pvs.containsProperty('nonexistent'), isFalse);
+      expect(pvs.containsProperty('123'), isFalse); // Non-string values
     });
 
     test('isEmpty should reflect empty state', () {

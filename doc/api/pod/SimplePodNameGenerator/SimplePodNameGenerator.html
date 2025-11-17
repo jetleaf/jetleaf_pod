@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="description" content="API docs for the SimplePodNameGenerator.new constructor from Class SimplePodNameGenerator from the pod library, for the Dart programming language.">
+  <title>SimplePodNameGenerator.new constructor - SimplePodNameGenerator - pod library - Dart API</title>
+
+
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../../static-assets/github.css?v1">
+  <link rel="stylesheet" href="../../static-assets/styles.css?v1">
+  <link rel="icon" href="../../static-assets/favicon.png?v1">
+  
+</head>
+
+<body data-base-href="../../" data-using-base-href="false" class="light-theme">
+<div id="overlay-under-drawer"></div>
+<header id="title">
+  <span id="sidenav-left-toggle" class="material-symbols-outlined" role="button" tabindex="0">menu</span>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod.dart</a></li>
+    <li><a href="../../pod/SimplePodNameGenerator-class.html">SimplePodNameGenerator</a></li>
+    <li class="self-crumb">SimplePodNameGenerator.new const constructor</li>
+  </ol>
+  <div class="self-name">SimplePodNameGenerator.new</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+  <button class="toggle" id="theme-button" title="Toggle between light and dark mode" aria-label="Light and dark mode toggle">
+    <span id="dark-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      dark_mode
+    </span>
+    <span id="light-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      light_mode
+    </span>
+  </button>
+</header>
+<main>
+  <div
+      id="dartdoc-main-content"
+      class="main-content"
+      data-above-sidebar="pod&#47;SimplePodNameGenerator-class-sidebar.html"
+      data-below-sidebar="">
+      <div>
+<h1><span class="kind-constructor">SimplePodNameGenerator</span> constructor 
+</h1></div>
+
+    <section class="multi-line-signature">
+      const
+      <span class="name ">SimplePodNameGenerator</span>(<wbr>)
+    </section>
+    
+<section class="desc markdown">
+  <p>Default implementation of the <a href="../../pod/PodNameGenerator-class.html">PodNameGenerator</a> interface.</p>
+<p>This generator produces pod names by taking the simple class name of the
+pod's type and decapitalizing the first character, following standard conventions.</p>
+<p>For example, a class <code>package:my_app/services/my_service.dart.MyService</code> would be registered with the
+name <code>myService</code>.</p>
+<p>Acronyms or all-uppercase prefixes (e.g. <code>URLService</code>) are <strong>not</strong> decapitalized,
+preserving the original class name casing.</p>
+<p>This is the default pod name generation strategy used throughout the JetLeaf
+framework when no explicit pod name is provided via annotations or configuration.</p>
+<p>Example usage:</p>
+<pre class="language-dart"><code class="language-dart">final generator = SimplePodNameGenerator();
+final podDef = RootPodDefinition(type: Class&lt;UserService&gt;());
+final podName = generator.generate(podDef, registry);
+print(podName); // 'userService'
+</code></pre>
+<p>Creates a new default pod name generator instance.</p>
+<p>Example:</p>
+<pre class="language-dart"><code class="language-dart">final generator = SimplePodNameGenerator();
+</code></pre>
+</section>
+
+
+    
+<section class="summary source-code" id="source">
+  <h2><span>Implementation</span></h2>
+  <pre class="language-dart"><code class="language-dart">const SimplePodNameGenerator();</code></pre>
+</section>
+
+
+  </div> <!-- /.main-content -->
+  <div id="dartdoc-sidebar-left" class="sidebar sidebar-offcanvas-left">
+    <!-- The search input and breadcrumbs below are only responsively visible at low resolutions. -->
+<header id="header-search-sidebar" class="hidden-l">
+  <form class="search-sidebar" role="search">
+    <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+<ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod</a></li>
+    <li><a href="../../pod/SimplePodNameGenerator-class.html">SimplePodNameGenerator</a></li>
+    <li class="self-crumb">SimplePodNameGenerator.new const constructor</li>
+</ol>
+
+    <h5>SimplePodNameGenerator class</h5>
+    <div id="dartdoc-sidebar-left-content"></div>
+  </div><!--/.sidebar-offcanvas-left-->
+  <div id="dartdoc-sidebar-right" class="sidebar sidebar-offcanvas-right">
+  </div><!--/.sidebar-offcanvas-->
+</main>
+<footer>
+  <span class="no-break">
+    jetleaf_pod
+      1.0.0+2
+  </span>
+  
+</footer>
+
+
+<script src="../../static-assets/highlight.pack.js?v1"></script>
+<script src="../../static-assets/docs.dart.js"></script>
+
+</body>
+</html>
+

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="description" content="API docs for the isTypeMatch method from the AbstractPodFactory class, for the Dart programming language.">
+  <title>isTypeMatch method - AbstractPodFactory class - pod library - Dart API</title>
+
+
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../../static-assets/github.css?v1">
+  <link rel="stylesheet" href="../../static-assets/styles.css?v1">
+  <link rel="icon" href="../../static-assets/favicon.png?v1">
+  
+</head>
+
+<body data-base-href="../../" data-using-base-href="false" class="light-theme">
+<div id="overlay-under-drawer"></div>
+<header id="title">
+  <span id="sidenav-left-toggle" class="material-symbols-outlined" role="button" tabindex="0">menu</span>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod.dart</a></li>
+    <li><a href="../../pod/AbstractPodFactory-class.html">AbstractPodFactory</a></li>
+    <li class="self-crumb">isTypeMatch method</li>
+  </ol>
+  <div class="self-name">isTypeMatch</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+  <button class="toggle" id="theme-button" title="Toggle between light and dark mode" aria-label="Light and dark mode toggle">
+    <span id="dark-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      dark_mode
+    </span>
+    <span id="light-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      light_mode
+    </span>
+  </button>
+</header>
+<main>
+<div
+    id="dartdoc-main-content"
+    class="main-content"
+    data-above-sidebar="pod&#47;AbstractPodFactory-class-sidebar.html"
+    data-below-sidebar="">
+    <div>
+<h1><span class="kind-method">isTypeMatch</span> method 
+</h1></div>
+
+    <section class="multi-line-signature">
+      
+  <div>
+    <ol class="annotation-list">
+        <li>@<a href="https://api.dart.dev/stable/3.9.2/dart-core/override-constant.html">override</a></li>
+    </ol>
+  </div>
+<span class="returntype"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Future-class.html">Future</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a></span>&gt;</span></span>
+<span class="name ">isTypeMatch</span>(<wbr><ol class="parameter-list single-line"> <li><span class="parameter" id="isTypeMatch-param-name"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span> <span class="parameter-name">name</span>, </span></li>
+<li><span class="parameter" id="isTypeMatch-param-typeToMatch"><span class="type-annotation">Class</span> <span class="parameter-name">typeToMatch</span>, [</span></li>
+<li><span class="parameter" id="isTypeMatch-param-allowPodProviderInit"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a></span> <span class="parameter-name">allowPodProviderInit</span> = <span class="default-value">false</span></span></li>
+</ol>])
+
+      <div class="features"><span class="feature">override</span></div>
+
+    </section>
+    
+<section class="desc markdown">
+  <p>Checks if the pod with the specified name matches the given type.</p>
+<p>This method is useful for checking the type of a pod before attempting to retrieve it.</p>
+<h2 id="usage-example">Usage Example:</h2>
+<pre class="language-dart"><code class="language-dart">if (await factory.isTypeMatch('userService', Class&lt;UserService&gt;())) {
+  final userService = await factory.getPod&lt;UserService&gt;('userService');
+  userService.doSomething();
+}
+</code></pre>
+<p>@param name The name of the pod to check
+@param typeToMatch The class type to match
+@return A Future that completes with true if the pod matches the type</p>
+</section>
+
+
+    
+<section class="summary source-code" id="source">
+  <h2><span>Implementation</span></h2>
+  <pre class="language-dart"><code class="language-dart">@override
+Future&lt;bool&gt; isTypeMatch(String name, Class typeToMatch, [bool allowPodProviderInit = false]) async {
+  final transformed = transformedPodName(name);
+  final isFactoryDereference = PodUtils.isFactoryDereference(name);
+
+  &#47;&#47; 1) check local singleton cache first (fast path)
+  final cachedHolder = await getSingletonCache(transformed, false);
+  if (cachedHolder != null &amp;&amp; cachedHolder.getType()?.getType() != NullablePod.CLASS.getType()) {
+    final instance = cachedHolder.getValue();
+
+    &#47;&#47; 1.a) Instance is a PodProvider (lazy provider)
+    if (instance is PodProvider) {
+      &#47;&#47; If caller asked for factory dereference (&amp; name used factory deref), we should not treat provider as target instance.
+      if (isFactoryDereference) {
+        return false;
+      }
+
+      &#47;&#47; If provider directly supports the target type, success.
+      if (instance.supportsType(typeToMatch)) {
+        return true;
+      }
+
+      &#47;&#47; Try to determine what the provider would produce (may initialize provider depending on flag).
+      final providedClass = await getPodProviderType(instance, allowPodProviderInit);
+      if (providedClass == null) {
+        &#47;&#47; Can&#39;t determine the provided type =&gt; no match.
+        return false;
+      }
+
+      &#47;&#47; If target type is assignable from the provider&#39;s produced type =&gt; match.
+      if (typeToMatch.isAssignableFrom(providedClass)) {
+        return true;
+      }
+
+      &#47;&#47; If target has generics, consult local merged definition for componentType heuristics.
+      if (typeToMatch.hasGenerics() &amp;&amp; containsDefinition(transformed)) {
+        final merged = getLocalMergedPodDefinition(transformed);
+        final Class targetClass = merged.type;
+
+        &#47;&#47; If merged type itself is a PodProvider subclass, inspect component type
+        if (POD_PROVIDER_CLASS.isAssignableFrom(targetClass)) {
+          &#47;&#47; Avoid confusing provider types: if requested type is not a provider itself
+          &#47;&#47; but could match the provider&#39;s component type, return that result.
+          if (!POD_PROVIDER_CLASS.isAssignableFrom(typeToMatch) &amp;&amp; !typeToMatch.isAssignableFrom(targetClass)) {
+            final comp = targetClass.componentType();
+            return comp != null &amp;&amp; typeToMatch.isAssignableFrom(comp);
+          }
+        } else {
+          &#47;&#47; Otherwise compare typeToMatch with the merged targetClass
+          return typeToMatch.isAssignableFrom(targetClass);
+        }
+      }
+
+      &#47;&#47; No match from provider path
+      return false;
+    }
+
+    &#47;&#47; 1.b) Instance is not a provider
+    if (isFactoryDereference) {
+      &#47;&#47; Caller explicitly asked for factory reference (e.g. &quot;&amp;podName&quot;) but the cached instance is the pod itself,
+      &#47;&#47; so the factory reference semantics don&#39;t match.
+      return false;
+    }
+
+    &#47;&#47; Direct instance check
+    if (typeToMatch.isInstance(instance)) {
+      return true;
+    }
+
+    &#47;&#47; If target type has generics, consult local merged definition metadata as fallback
+    if (typeToMatch.hasGenerics() &amp;&amp; containsDefinition(transformed)) {
+      final definition = getLocalMergedPodDefinition(transformed);
+      final Class targetType = definition.type;
+
+      if (!targetType.isInstance(instance)) {
+        final Class? componentToMatch = typeToMatch.componentType();
+        if (componentToMatch != null &amp;&amp; !componentToMatch.isInstance(instance)) {
+          return false;
+        }
+        if (typeToMatch.isAssignableFrom(targetType)) {
+          return true;
+        }
+      }
+      return typeToMatch.isAssignableFrom(targetType);
+    }
+
+    &#47;&#47; No match against cached instance
+    return false;
+  } &#47;&#47; end cachedHolder != null
+
+  &#47;&#47; 2) No cached instance -&gt; check local definition metadata (if any)
+  if (containsDefinition(transformed)) {
+    final def = getLocalMergedPodDefinition(transformed);
+    final Class declaredType = def.type;
+
+    &#47;&#47; If caller asked for factory deref, we only match if declaredType is PodProvider (or subclass)
+    if (isFactoryDereference) {
+      return POD_PROVIDER_CLASS.isAssignableFrom(declaredType);
+    }
+
+    &#47;&#47; Direct assignability from declared type is a match
+    if (typeToMatch.isAssignableFrom(declaredType)) {
+      return true;
+    }
+
+    &#47;&#47; If typeToMatch has generics, try matching component&#47;generic types of declaredType
+    if (typeToMatch.hasGenerics()) {
+      final Class? declaredComponent = declaredType.componentType();
+      final Class? wantedComponent = typeToMatch.componentType();
+      if (wantedComponent != null &amp;&amp; declaredComponent != null) {
+        if (wantedComponent.isAssignableFrom(declaredComponent)) {
+          return true;
+        }
+      }
+    }
+
+    &#47;&#47; If declaredType is a PodProvider, check the provider&#39;s produced type (without instantiating provider unless allowed)
+    if (POD_PROVIDER_CLASS.isAssignableFrom(declaredType)) {
+      &#47;&#47; If we can determine produced type from the definition metadata, prefer that.
+      final Class declaredProvided = def.type;
+      return typeToMatch.isAssignableFrom(declaredProvided);
+    }
+
+    &#47;&#47; Not matched by local definition
+  }
+
+  &#47;&#47; 3) Nothing local matched -&gt; delegate to parent factory (if any)
+  final parent = getParentFactory();
+  if (parent != null) {
+    try {
+      &#47;&#47; Assume parent exposes the same isTypeMatch API and is async
+      return await parent.isTypeMatch(name, typeToMatch, allowPodProviderInit);
+    } catch (_) {
+      &#47;&#47; swallow and return false for robust fallback semantics
+      return false;
+    }
+  }
+
+  &#47;&#47; 4) No parent and no match -&gt; false
+  return false;
+}</code></pre>
+</section>
+
+
+  </div> <!-- /.main-content -->
+  <div id="dartdoc-sidebar-left" class="sidebar sidebar-offcanvas-left">
+    <!-- The search input and breadcrumbs below are only responsively visible at low resolutions. -->
+<header id="header-search-sidebar" class="hidden-l">
+  <form class="search-sidebar" role="search">
+    <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+<ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod</a></li>
+    <li><a href="../../pod/AbstractPodFactory-class.html">AbstractPodFactory</a></li>
+    <li class="self-crumb">isTypeMatch method</li>
+</ol>
+
+    <h5>AbstractPodFactory class</h5>
+    <div id="dartdoc-sidebar-left-content"></div>
+  </div><!--/.sidebar-offcanvas-->
+  <div id="dartdoc-sidebar-right" class="sidebar sidebar-offcanvas-right">
+</div><!--/.sidebar-offcanvas-->
+</main>
+<footer>
+  <span class="no-break">
+    jetleaf_pod
+      1.0.0+2
+  </span>
+  
+</footer>
+
+
+<script src="../../static-assets/highlight.pack.js?v1"></script>
+<script src="../../static-assets/docs.dart.js"></script>
+
+</body>
+</html>
+

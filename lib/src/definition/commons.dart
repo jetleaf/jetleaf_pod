@@ -159,7 +159,9 @@ class FactoryMethodDesign with EqualsAndHashCode, ToString {
   ///   print("Factory method: ${factoryMethod.getName()}");
   /// }
   /// ```
-  Method? getFactoryMethod() => factoryType?.getMethod(methodName);
+  Method? getFactoryMethod() => methodName.isEmpty || factoryType == Null.CLASS
+    ? null
+    : factoryType?.getMethod(methodName);
 
   @override
   List<Object?> equalizedProperties() => [podName, methodName];

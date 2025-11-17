@@ -164,8 +164,7 @@ class ArgumentValue extends ConvertibleValue {
   /// [value]: The argument value
   /// [qualifiedName]: Required qualified name of the class that the argument is for (The return type of the argument)
   /// [name]: Optional name for the argument
-  ArgumentValue(Object? value, {String? qualifiedName, String? packageName, String? name}) 
-    : _name = name, super(value, qualifiedName: qualifiedName, packageName: packageName);
+  ArgumentValue(super.value, {super.qualifiedName, super.packageName, String? name}) : _name = name;
 
   /// {@template value_holder_copy}
   /// Creates a deep copy of this [ArgumentValue].

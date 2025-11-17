@@ -151,7 +151,7 @@ abstract class PodUtils {
   
   /// {@macro is_factory_dereference}
   static bool isFactoryDereference(String? name) {
-    return (name != null && !name.isEmpty && name.startsWith(POD_PROVIDER_PREFIX));
+    return (name != null && name.isNotEmpty && name.startsWith(POD_PROVIDER_PREFIX));
   }
 
   /// {@template transformed_pod_name}
@@ -218,7 +218,7 @@ abstract class PodUtils {
   
   /// {@macro is_generated_pod_name}
   static bool isGeneratedName(String? name) {
-    return (name != null && !name.isEmpty && name.contains(GENERATED_POD_NAME_SEPARATOR));
+    return (name != null && name.isNotEmpty && name.contains(GENERATED_POD_NAME_SEPARATOR));
   }
 
   /// {@template original_pod_name}

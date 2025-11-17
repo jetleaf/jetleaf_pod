@@ -31,7 +31,7 @@ import 'pod_processors.dart';
 /// by invoking:
 ///
 /// - The `destroy()` method from the [`DisposablePod`] interface (if implemented).
-/// - The `close()` method from the [`AutoCloseable`] interface (if applicable).
+/// - The `close()` method from the [`Closeable`] interface (if applicable).
 /// - Any **custom destroy methods** defined in the [`RootPodDefinition`].
 ///
 /// It also applies any configured
@@ -96,8 +96,8 @@ class DisposableLifecycleManager implements DisposablePod, Runnable {
     PackageNames.POD,
   );
 
-  /// Internal reference to the `AutoCloseable` type.
-  static final Class _autoCloseable = Class<AutoCloseable>(
+  /// Internal reference to the `Closeable` type.
+  static final Class _autoCloseable = Class<Closeable>(
     null,
     PackageNames.LANG,
   );
@@ -108,8 +108,8 @@ class DisposableLifecycleManager implements DisposablePod, Runnable {
   /// Whether the pod should invoke its `StreamSubscription.cancel()` method.
   bool _invokeStreamSubscription = false;
 
-  /// Whether the pod should invoke its `AutoCloseable.close()` method.
-  bool _invokeAutoCloseable = true;
+  /// Whether the pod should invoke its `Closeable.close()` method.
+  bool _invokeCloseable = true;
 
   /// Custom destroy method names specified for this pod.
   List<String> _destroyMethodNames = [];
@@ -134,14 +134,9 @@ class DisposableLifecycleManager implements DisposablePod, Runnable {
   /// The adapter inspects the pod definition to determine whether
   /// to call:
   /// - `destroy()` from `DisposablePod`
-  /// - `close()` from `AutoCloseable`
+  /// - `close()` from `Closeable`
   /// - or a custom destroy method.
-  DisposableLifecycleManager(
-    this.pod,
-    this.name,
-    RootPodDefinition pd,
-    this.processors,
-  ) {
+  DisposableLifecycleManager(this.pod, this.name, RootPodDefinition pd, this.processors) {
     _handleDestroyMethods(pd);
   }
 
@@ -155,18 +150,15 @@ class DisposableLifecycleManager implements DisposablePod, Runnable {
 
     // Decide whether to invoke interface-based lifecycle methods.
     // These are independent flags — a pod can implement both and both should be invoked.
-    _invokeDisposablePod =
-        pod is DisposablePod && !pd.hasDestroyMethod(_DESTROY_METHOD_NAME);
+    _invokeDisposablePod = pod is DisposablePod && !pd.hasDestroyMethod(_DESTROY_METHOD_NAME);
 
-    // Call close() when the pod implements AutoCloseable and the definition
+    // Call close() when the pod implements Closeable and the definition
     // does not explicitly override/declare a 'close' destroy method.
-    _invokeAutoCloseable =
-        pod is AutoCloseable && !pd.hasDestroyMethod(_CLOSE_METHOD_NAME);
+    _invokeCloseable = pod is Closeable && !pd.hasDestroyMethod(_CLOSE_METHOD_NAME);
 
     // Call cancel() when the pod implements StreamSubscription and the definition
     // does not explicitly override/declare a 'cancel' destroy method.
-    _invokeStreamSubscription =
-        pod is StreamSubscription && !pd.hasDestroyMethod(_CANCEL_METHOD_NAME);
+    _invokeStreamSubscription = pod is StreamSubscription && !pd.hasDestroyMethod(_CANCEL_METHOD_NAME);
 
     // Always attempt to resolve any destroy methods named in the pod definition (or inferred).
     if (destroyMethodNames != null && destroyMethodNames.isNotEmpty) {
@@ -176,25 +168,19 @@ class DisposableLifecycleManager implements DisposablePod, Runnable {
       for (final destroyMethodName in destroyMethodNames) {
         final found = _determineMethodToUse(destroyMethodName);
         if (found == null && pd.lifecycle.enforceDestroyMethod) {
-          throw PodDefinitionValidationException(
-            "Could not find a destroy method named $destroyMethodName on pod with name $name",
-          );
+          throw PodDefinitionValidationException("Could not find a destroy method named $destroyMethodName on pod with name $name");
         }
 
         if (found != null) {
           // Parameter checks: 0 params or 1 boolean param allowed
           final paramCount = found.getParameterCount();
           if (paramCount > 1) {
-            throw PodDefinitionValidationException(
-              "Method $destroyMethodName of pod $name has more than one parameter - not supported as destroy method",
-            );
+            throw PodDefinitionValidationException("Method $destroyMethodName of pod $name has more than one parameter - not supported as destroy method");
           }
           if (paramCount == 1) {
             final paramTypes = found.getParameterTypes();
             if (paramTypes.isNotEmpty && paramTypes.first.getType() != bool) {
-              throw PodDefinitionValidationException(
-                "Method $destroyMethodName of pod $name has a non-boolean parameter - not supported as destroy method",
-              );
+              throw PodDefinitionValidationException("Method $destroyMethodName of pod $name has a non-boolean parameter - not supported as destroy method");
             }
           }
 
@@ -209,9 +195,7 @@ class DisposableLifecycleManager implements DisposablePod, Runnable {
   @override
   Future<void> onDestroy() async {
     // Run pre-destroy processors first
-    processors.process(
-      (processor) => processor.processBeforeDestruction(pod, _podClass, name),
-    );
+    processors.process((processor) => processor.processBeforeDestruction(pod, _podClass, name));
 
     // Call DisposablePod.onDestroy() if applicable
     if (_invokeDisposablePod) {
@@ -224,8 +208,8 @@ class DisposableLifecycleManager implements DisposablePod, Runnable {
       } catch (ex) {
         // Log any errors during destroy
         if (logger.getIsWarnEnabled()) {
-          String msg =
-              "Invocation of onDestroy() method failed on pod with name '$name'";
+          String msg = "Invocation of onDestroy() method failed on pod with name '$name'";
+          
           if (logger.getIsDebugEnabled()) {
             logger.warn(msg, error: ex);
           } else {
@@ -246,8 +230,8 @@ class DisposableLifecycleManager implements DisposablePod, Runnable {
       } catch (ex) {
         // Log any errors during destroy
         if (logger.getIsWarnEnabled()) {
-          String msg =
-              "Invocation of cancel() method failed on pod with name '$name'";
+          String msg = "Invocation of cancel() method failed on pod with name '$name'";
+          
           if (logger.getIsDebugEnabled()) {
             logger.warn(msg, error: ex);
           } else {
@@ -257,19 +241,19 @@ class DisposableLifecycleManager implements DisposablePod, Runnable {
       }
     }
 
-    // Call AutoCloseable.close() if applicable
-    if (_invokeAutoCloseable) {
+    // Call Closeable.close() if applicable
+    if (_invokeCloseable) {
       if (logger.getIsTraceEnabled()) {
         logger.trace("Invoking close() on pod with name '$name'");
       }
 
       try {
-        await (pod as AutoCloseable).close();
+        await (pod as Closeable).close();
       } catch (ex) {
         // Log any errors during close
         if (logger.getIsWarnEnabled()) {
-          String msg =
-              "Invocation of close method failed on pod with name '$name'";
+          String msg = "Invocation of close method failed on pod with name '$name'";
+          
           if (logger.getIsDebugEnabled()) {
             logger.warn(msg, error: ex);
           } else {
@@ -290,9 +274,7 @@ class DisposableLifecycleManager implements DisposablePod, Runnable {
     }
 
     // Run post-destroy processors last
-    processors.process(
-      (processor) => processor.processAfterDestruction(pod, _podClass, name),
-    );
+    processors.process((processor) => processor.processAfterDestruction(pod, _podClass, name));
   }
 
   @override
@@ -341,9 +323,7 @@ class DisposableLifecycleManager implements DisposablePod, Runnable {
   void _invokeCustomMethod(Method destroyMethod) async {
     // Log the method being invoked
     if (logger.getIsTraceEnabled()) {
-      logger.trace(
-        "Invoking custom destroy method '${destroyMethod.getName()}' on pod with name '$name': $destroyMethod",
-      );
+      logger.trace("Invoking custom destroy method '${destroyMethod.getName()}' on pod with name '$name': $destroyMethod");
     }
 
     // Build the arguments list for the method invocation
@@ -371,8 +351,8 @@ class DisposableLifecycleManager implements DisposablePod, Runnable {
       // Handle and log exceptions from custom destroy methods
       Object cause = ex is Throwable ? ex.getCause() ?? ex.getMessage() : ex;
       if (logger.getIsWarnEnabled()) {
-        String msg =
-            "Invocation of custom destroy method failed on pod with name '$name'";
+        String msg = "Invocation of custom destroy method failed on pod with name '$name'";
+        
         if (logger.getIsDebugEnabled()) {
           logger.warn(msg, error: cause);
         } else {
@@ -388,9 +368,7 @@ class DisposableLifecycleManager implements DisposablePod, Runnable {
   /// [async]: Whether the method was invoked asynchronously
   void _logCompletedDestroyMethod(Method destroyMethod, bool async) {
     if (logger.getIsDebugEnabled()) {
-      logger.debug(
-        "Custom destroy method '${destroyMethod.getName()}' on pod with name '$name' completed ${(async ? " asynchronously" : "")}",
-      );
+      logger.debug("Custom destroy method '${destroyMethod.getName()}' on pod with name '$name' completed ${(async ? " asynchronously" : "")}");
     }
   }
 
@@ -408,16 +386,13 @@ class DisposableLifecycleManager implements DisposablePod, Runnable {
   ///
   /// This method attempts to detect:
   /// - Custom destroy methods
-  /// - `close()` if the pod implements `AutoCloseable`
+  /// - `close()` if the pod implements `Closeable`
   /// - `shutdown()` as a fallback
-  static List<String>? buildMethodIfRequired(
-    Class podClass,
-    RootPodDefinition pd,
-  ) {
+  static List<String>? buildMethodIfRequired(Class podClass, RootPodDefinition pd) {
     // Get the destroy method names from the pod definition
-    List<String>? _destroyMethodNames = pd.lifecycle.destroyMethods;
-    if (_destroyMethodNames.isNotEmpty) {
-      return _destroyMethodNames;
+    List<String>? destroyMethodNames = pd.lifecycle.destroyMethods;
+    if (destroyMethodNames.isNotEmpty) {
+      return destroyMethodNames;
     }
 
     // Get the destroy method name from the pod definition
@@ -434,9 +409,7 @@ class DisposableLifecycleManager implements DisposablePod, Runnable {
           if (autoCloseable) {
             destroyMethodName = _CLOSE_METHOD_NAME;
           } else {
-            destroyMethodName =
-                podClass.getMethod(_CLOSE_METHOD_NAME)?.getName() ??
-                podClass.getMethod(_SHUTDOWN_METHOD_NAME)?.getName();
+            destroyMethodName = podClass.getMethod(_CLOSE_METHOD_NAME)?.getName() ?? podClass.getMethod(_SHUTDOWN_METHOD_NAME)?.getName();
           }
         }
       }
@@ -455,11 +428,7 @@ class DisposableLifecycleManager implements DisposablePod, Runnable {
   /// [pod]: The pod to check
   /// [pd]: The pod definition to check
   /// [processors]: Set of post-processors to check
-  static Future<bool> hasApplicableProcessors(
-    Object pod,
-    RootPodDefinition pd,
-    Set<PodDestructionProcessor> processors,
-  ) async {
+  static Future<bool> hasApplicableProcessors(Object pod, RootPodDefinition pd, Set<PodDestructionProcessor> processors) async {
     // Return true if any applicable post-processors found
     if (processors.isEmpty) {
       return false;
@@ -481,11 +450,7 @@ class DisposableLifecycleManager implements DisposablePod, Runnable {
   /// [processors]: Set of post-processors to filter
   /// [pod]: The pod to check
   /// [pd]: The pod definition to check
-  static Future<List<PodDestructionProcessor>> filterPostProcessors(
-    Set<PodDestructionProcessor> processors,
-    Object pod,
-    RootPodDefinition pd,
-  ) async {
+  static Future<List<PodDestructionProcessor>> filterPostProcessors(Set<PodDestructionProcessor> processors, Object pod, RootPodDefinition pd) async {
     // Return the filtered list of post-processors
     List<PodDestructionProcessor> filteredProcessors = [];
 

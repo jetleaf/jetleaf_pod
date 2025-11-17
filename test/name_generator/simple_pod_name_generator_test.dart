@@ -12,6 +12,8 @@
 // 
 // 🔧 Powered by Hapnium — the Dart backend engine 🍃
 
+// ignore_for_file: camel_case_types
+
 // test/simple_pod_name_generator_test.dart
 import 'package:jetleaf_lang/lang.dart';
 import 'package:jetleaf_pod/src/name_generator/simple_pod_name_generator.dart';

@@ -61,7 +61,7 @@
 /// - Application-ready with startup orchestration.
 ///
 /// See the individual sub-libraries for detailed API documentation.
-library jetleaf_pod;
+library;
 
 export 'src/alias/alias_registry.dart';
 export 'src/alias/simple_alias_registry.dart';

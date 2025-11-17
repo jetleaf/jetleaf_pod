@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="description" content="API docs for the isEagerInit method from the PodProvider class, for the Dart programming language.">
+  <title>isEagerInit method - PodProvider class - pod library - Dart API</title>
+
+
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../../static-assets/github.css?v1">
+  <link rel="stylesheet" href="../../static-assets/styles.css?v1">
+  <link rel="icon" href="../../static-assets/favicon.png?v1">
+  
+</head>
+
+<body data-base-href="../../" data-using-base-href="false" class="light-theme">
+<div id="overlay-under-drawer"></div>
+<header id="title">
+  <span id="sidenav-left-toggle" class="material-symbols-outlined" role="button" tabindex="0">menu</span>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod.dart</a></li>
+    <li><a href="../../pod/PodProvider-class.html">PodProvider<span class="signature">&lt;<wbr><span class="type-parameter">T</span>&gt;</span></a></li>
+    <li class="self-crumb">isEagerInit method</li>
+  </ol>
+  <div class="self-name">isEagerInit</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+  <button class="toggle" id="theme-button" title="Toggle between light and dark mode" aria-label="Light and dark mode toggle">
+    <span id="dark-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      dark_mode
+    </span>
+    <span id="light-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      light_mode
+    </span>
+  </button>
+</header>
+<main>
+<div
+    id="dartdoc-main-content"
+    class="main-content"
+    data-above-sidebar="pod&#47;PodProvider-class-sidebar.html"
+    data-below-sidebar="">
+    <div>
+<h1><span class="kind-method">isEagerInit</span> method 
+</h1></div>
+
+    <section class="multi-line-signature">
+      
+<span class="returntype"><a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a></span>
+<span class="name ">isEagerInit</span>(<wbr>)
+
+      
+
+    </section>
+    
+<section class="desc markdown">
+  <p>Returns whether this factory pod should be eagerly initialized.</p>
+<p>This method controls when the factory pod itself (not the objects it creates)
+is initialized. Eager initialization can be useful for:</p>
+<ul>
+<li>Validating configuration early in the application startup</li>
+<li>Pre-warming caches or connections</li>
+<li>Failing fast if there are configuration problems</li>
+</ul>
+<h2 id="return-value">Return Value</h2>
+<ul>
+<li><code>true</code> if the factory should be initialized during context startup</li>
+<li><code>false</code> if the factory should be initialized lazily when first accessed</li>
+</ul>
+<h2 id="default-implementation">Default Implementation</h2>
+<p>The default implementation returns <code>false</code>, meaning lazy initialization.
+This is generally preferred for better startup performance.</p>
+<h2 id="example---eager-initialization">Example - Eager Initialization</h2>
+<pre class="language-dart"><code class="language-dart">class DatabaseConnectionPoolFactory extends PodProvider&lt;ConnectionPool&gt; {
+  @override
+  ObjectHolder&lt;ConnectionPool&gt;? get() {
+    // Expensive initialization - validate early
+    return ConnectionPool.create(connectionString);
+  }
+  
+  @override
+  bool isEagerInit() =&gt; true; // Initialize during startup
+}
+</code></pre>
+<h2 id="example---lazy-initialization">Example - Lazy Initialization</h2>
+<pre class="language-dart"><code class="language-dart">class ReportGeneratorFactory extends PodProvider&lt;ReportGenerator&gt; {
+  @override
+  ObjectHolder&lt;ReportGenerator&gt;? get() =&gt; ReportGenerator();
+  
+  @override
+  bool isEagerInit() =&gt; false; // Initialize when first needed
+}
+</code></pre>
+<h2 id="performance-considerations">Performance Considerations</h2>
+<ul>
+<li>Eager initialization increases startup time but can catch errors early</li>
+<li>Lazy initialization improves startup performance but may delay error detection</li>
+<li>Use eager initialization for critical infrastructure pods</li>
+<li>Use lazy initialization for optional or rarely-used pods</li>
+</ul>
+</section>
+
+
+    
+<section class="summary source-code" id="source">
+  <h2><span>Implementation</span></h2>
+  <pre class="language-dart"><code class="language-dart">bool isEagerInit() =&gt; false;</code></pre>
+</section>
+
+
+  </div> <!-- /.main-content -->
+  <div id="dartdoc-sidebar-left" class="sidebar sidebar-offcanvas-left">
+    <!-- The search input and breadcrumbs below are only responsively visible at low resolutions. -->
+<header id="header-search-sidebar" class="hidden-l">
+  <form class="search-sidebar" role="search">
+    <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+<ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod</a></li>
+    <li><a href="../../pod/PodProvider-class.html">PodProvider<span class="signature">&lt;<wbr><span class="type-parameter">T</span>&gt;</span></a></li>
+    <li class="self-crumb">isEagerInit method</li>
+</ol>
+
+    <h5>PodProvider class</h5>
+    <div id="dartdoc-sidebar-left-content"></div>
+  </div><!--/.sidebar-offcanvas-->
+  <div id="dartdoc-sidebar-right" class="sidebar sidebar-offcanvas-right">
+</div><!--/.sidebar-offcanvas-->
+</main>
+<footer>
+  <span class="no-break">
+    jetleaf_pod
+      1.0.0+2
+  </span>
+  
+</footer>
+
+
+<script src="../../static-assets/highlight.pack.js?v1"></script>
+<script src="../../static-assets/docs.dart.js"></script>
+
+</body>
+</html>
+

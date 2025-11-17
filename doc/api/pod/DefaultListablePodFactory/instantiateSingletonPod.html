@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="description" content="API docs for the instantiateSingletonPod method from the DefaultListablePodFactory class, for the Dart programming language.">
+  <title>instantiateSingletonPod method - DefaultListablePodFactory class - pod library - Dart API</title>
+
+
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../../static-assets/github.css?v1">
+  <link rel="stylesheet" href="../../static-assets/styles.css?v1">
+  <link rel="icon" href="../../static-assets/favicon.png?v1">
+  
+</head>
+
+<body data-base-href="../../" data-using-base-href="false" class="light-theme">
+<div id="overlay-under-drawer"></div>
+<header id="title">
+  <span id="sidenav-left-toggle" class="material-symbols-outlined" role="button" tabindex="0">menu</span>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod.dart</a></li>
+    <li><a href="../../pod/DefaultListablePodFactory-class.html">DefaultListablePodFactory</a></li>
+    <li class="self-crumb">instantiateSingletonPod method</li>
+  </ol>
+  <div class="self-name">instantiateSingletonPod</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+  <button class="toggle" id="theme-button" title="Toggle between light and dark mode" aria-label="Light and dark mode toggle">
+    <span id="dark-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      dark_mode
+    </span>
+    <span id="light-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      light_mode
+    </span>
+  </button>
+</header>
+<main>
+<div
+    id="dartdoc-main-content"
+    class="main-content"
+    data-above-sidebar="pod&#47;DefaultListablePodFactory-class-sidebar.html"
+    data-below-sidebar="">
+    <div>
+<h1><span class="kind-method">instantiateSingletonPod</span> method 
+</h1></div>
+
+    <section class="multi-line-signature">
+      
+<span class="returntype"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Future-class.html">Future</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="https://api.dart.dev/stable/3.9.2/dart-core/MapEntry-class.html">MapEntry</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span>, <span class="type-parameter"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Object-class.html">Object</a></span>&gt;</span>?</span>&gt;</span></span>
+<span class="name ">instantiateSingletonPod</span>(<wbr><ol class="parameter-list single-line"> <li><span class="parameter" id="instantiateSingletonPod-param-podName"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span> <span class="parameter-name">podName</span></span></li>
+</ol>)
+
+      
+
+    </section>
+    
+<section class="desc markdown">
+  <p>Attempts to pre-instantiate a singleton pod and returns its resolved instance.</p>
+<p>This method is used during container startup or refresh phases to eagerly
+create all non-lazy singleton pods. It performs several validation checks
+before instantiation and safely skips pods that should not or cannot be
+created at this time.</p>
+<h3 id="behavior-overview">Behavior Overview</h3>
+<p>The method proceeds through the following steps:</p>
+<ol>
+<li>
+<p><strong>Lookup merged pod definition</strong><br>
+Retrieves the effective pod definition for <code>podName</code>. If the definition
+is missing, a warning is logged and <code>null</code> is returned.</p>
+</li>
+<li>
+<p><strong>Eligibility checks</strong><br>
+The pod is skipped if:</p>
+<ul>
+<li>It is <em>abstract</em> and has no factory method (<code>isAbstractAndNoFactory()</code>), or</li>
+<li>It is not defined as a <em>singleton</em> (<code>!def.scope.isSingleton</code>)</li>
+</ul>
+<p>These cases indicate the pod cannot or should not be instantiated
+directly.</p>
+</li>
+<li>
+<p><strong>Lazy singletons</strong><br>
+If the pod's lifecycle is marked as <code>lazy</code>, it will not be created
+eagerly and is simply skipped.</p>
+</li>
+<li>
+<p><strong>Provider pods</strong><br>
+If the pod is a provider, its <em>real</em> target pod name is resolved before
+invoking <a href="../../pod/AbstractPodFactory/getPod.html">getPod</a>.</p>
+</li>
+<li>
+<p><strong>Instantiation &amp; error handling</strong><br>
+Attempts to create (or retrieve) the pod instance through <a href="../../pod/AbstractPodFactory/getPod.html">getPod</a>.</p>
+<ul>
+<li>If the pod is already in creation (<code>PodCurrentlyInCreationException</code>),
+instantiation is skipped to avoid circular-creation conflicts.</li>
+<li>Any other failure is logged and rethrown.</li>
+</ul>
+</li>
+</ol>
+<h3 id="return-value">Return Value</h3>
+<ul>
+<li>Returns a <a href="https://api.dart.dev/stable/3.9.2/dart-core/MapEntry-class.html">MapEntry</a> of the original <code>podName</code> and its instantiated
+singleton instance on success.</li>
+<li>Returns <code>null</code> if the pod is skipped or cannot be instantiated.</li>
+</ul>
+<h3 id="logging">Logging</h3>
+<ul>
+<li><strong>TRACE</strong> logs are emitted for all skip conditions.</li>
+<li><strong>WARN</strong> logs are emitted when:
+<ul>
+<li>The definition is missing</li>
+<li>Instantiation of an eligible singleton fails</li>
+</ul>
+</li>
+</ul>
+<h3 id="example">Example</h3>
+<pre class="language-dart"><code class="language-dart">final entry = await instantiateSingletonPod("userService");
+if (entry != null) {
+  print("Pre-instantiated: ${entry.key} -&gt; ${entry.value}");
+}
+</code></pre>
+<h3 id="throws">Throws</h3>
+<ul>
+<li>Re-throws any exception from <a href="../../pod/AbstractPodFactory/getPod.html">getPod</a> other than
+<a href="../../pod/PodCurrentlyInCreationException-class.html">PodCurrentlyInCreationException</a>.</li>
+</ul>
+<h3 id="see-also">See also</h3>
+<ul>
+<li><a href="../../pod/AbstractPodFactory/getPod.html">getPod</a></li>
+<li><a href="../../pod/AbstractPodFactory/isPodProvider.html">isPodProvider</a></li>
+<li><a href="../../pod/AbstractPodFactory/podProviderName.html">podProviderName</a></li>
+<li><a href="../../pod/AbstractPodFactory/getLocalMergedPodDefinition.html">getLocalMergedPodDefinition</a></li>
+</ul>
+</section>
+
+
+    
+<section class="summary source-code" id="source">
+  <h2><span>Implementation</span></h2>
+  <pre class="language-dart"><code class="language-dart">Future&lt;MapEntry&lt;String, Object&gt;?&gt; instantiateSingletonPod(String podName) async {
+  try {
+    final def = getLocalMergedPodDefinition(podName);
+
+    &#47;&#47; Must be singleton and instantiable
+    if (def.isAbstractAndNoFactory() || !def.scope.isSingleton) {
+      if (logger.getIsTraceEnabled()) {
+        logger.trace(
+          &quot;Skipping pod &#39;$podName&#39;: definition is not a singleton, &quot;
+          &quot;it&#39;s abstract with no factory or has non-singleton scope.&quot;
+        );
+      }
+      return null;
+    }
+
+    &#47;&#47; Lazy singletons are skipped
+    final isLazy = def.lifecycle.isLazy == true;
+    if (isLazy) {
+      if (logger.getIsTraceEnabled()) {
+        logger.trace(&quot;Pod &#39;$podName&#39; is marked as lazy. Skipping pre-instantiation.&quot;);
+      }
+      return null;
+    }
+
+    &#47;&#47; Provider pod?
+    final bool provider = await isPodProvider(podName);
+    final String realName = provider ? podProviderName(podName) : podName;
+
+    try {
+      final Object instance = await getPod(realName);
+      return MapEntry(podName, instance);
+    } on PodCurrentlyInCreationException catch (_) {
+      if (logger.getIsTraceEnabled()) {
+        logger.trace(&quot;Pod &#39;$podName&#39; is currently being created elsewhere. Skipping.&quot;);
+      }
+
+      return null;
+    } catch (e) {
+      if (logger.getIsWarnEnabled()) {
+        logger.warn(&quot;Failed to pre-instantiate singleton &#39;$podName&#39;&quot;, error: e);
+      }
+
+      rethrow;
+    }
+  } on NoSuchPodDefinitionException catch (_) {
+    if (logger.getIsWarnEnabled()) {
+      logger.warn(&quot;No definition found for &#39;$podName&#39; while pre-instantiating singletons&quot;);
+    }
+
+    return null;
+  }
+}</code></pre>
+</section>
+
+
+  </div> <!-- /.main-content -->
+  <div id="dartdoc-sidebar-left" class="sidebar sidebar-offcanvas-left">
+    <!-- The search input and breadcrumbs below are only responsively visible at low resolutions. -->
+<header id="header-search-sidebar" class="hidden-l">
+  <form class="search-sidebar" role="search">
+    <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+<ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+    <li><a href="../../index.html">jetleaf_pod</a></li>
+    <li><a href="../../pod/">pod</a></li>
+    <li><a href="../../pod/DefaultListablePodFactory-class.html">DefaultListablePodFactory</a></li>
+    <li class="self-crumb">instantiateSingletonPod method</li>
+</ol>
+
+    <h5>DefaultListablePodFactory class</h5>
+    <div id="dartdoc-sidebar-left-content"></div>
+  </div><!--/.sidebar-offcanvas-->
+  <div id="dartdoc-sidebar-right" class="sidebar sidebar-offcanvas-right">
+</div><!--/.sidebar-offcanvas-->
+</main>
+<footer>
+  <span class="no-break">
+    jetleaf_pod
+      1.0.0+2
+  </span>
+  
+</footer>
+
+
+<script src="../../static-assets/highlight.pack.js?v1"></script>
+<script src="../../static-assets/docs.dart.js"></script>
+
+</body>
+</html>
+
