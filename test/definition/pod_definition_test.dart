@@ -110,7 +110,7 @@ void main() {
       expect(pod.name, equals('testPod'));
       expect(pod.description, equals('Test description'));
       expect(pod.dependencyCheck, equals(DependencyCheck.ALL));
-      expect(pod.scope.type, equals(ScopeType.PROTOTYPE));
+      expect(pod.scope.type, equals(ScopeType.PROTOTYPE.name));
       expect(pod.design.role, equals(DesignRole.INFRASTRUCTURE));
       expect(pod.lifecycle.isLazy, isTrue);
       expect(pod.dependsOn, hasLength(1));
@@ -125,7 +125,7 @@ void main() {
       );
 
       expect(pod.dependencyCheck, equals(DependencyCheck.NONE));
-      expect(pod.scope.type, equals(ScopeType.SINGLETON));
+      expect(pod.scope.type, equals(ScopeType.SINGLETON.name));
       expect(pod.design.role, equals(DesignRole.APPLICATION));
       expect(pod.lifecycle.isLazy, isFalse);
       expect(pod.dependsOn, isEmpty);

@@ -102,19 +102,6 @@ void main() {
       expect(cloned.isPodProvider, equals(original.isPodProvider));
     });
 
-    // test('should handle pod expression in from constructor', () {
-    //   final original = RootPodDefinition(
-    //     name: 'testPod',
-    //     type: Class<String>(),
-    //   );
-
-    //   final expression = PodExpression<Object>('Test()');
-    //   original.setPodExpression(expression);
-
-    //   final copy = RootPodDefinition.from(original);
-    //   expect(copy.getPodExpression(), equals(expression));
-    // });
-
     test('should handle null properties in from constructor', () {
       final original = RootPodDefinition(type: Class<String>())..name = 'testPod';
 

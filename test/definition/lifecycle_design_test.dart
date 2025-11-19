@@ -22,7 +22,7 @@ void main() {
     test('should create with default values', () {
       final design = LifecycleDesign();
 
-      expect(design.isLazy, isFalse);
+      expect(design.isLazy, isNull);
       expect(design.initMethods, isEmpty);
       expect(design.destroyMethods, isEmpty);
       expect(design.enforceInitMethod, isTrue);

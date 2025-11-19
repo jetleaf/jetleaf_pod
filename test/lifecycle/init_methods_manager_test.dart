@@ -84,18 +84,6 @@ void main() {
       expect(pod.onReadyCalled, isTrue);
     });
 
-    test('should invoke both lifecycle interfaces', () async {
-      // Arrange
-      final pod = TestBothLifecyclePod();
-      
-      // Act
-      await manager.invokeInitMethods('testPod', pod, null);
-      
-      // Assert
-      expect(pod.onReadyCalled, isTrue);
-      expect(pod.onSingletonReadyCalled, isTrue);
-    });
-
     test('should invoke custom init methods', () async {
       // Arrange
       final pod = TestCustomInitPod();

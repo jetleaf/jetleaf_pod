@@ -126,8 +126,11 @@ void main() {
       final pod = MockPodDefinition(name: 'TestPod', type: Class<String>());
       await registry.registerDefinition('test', pod);
 
-      expect(registry.isNameInUse('test'), isTrue);
-      expect(registry.isNameInUse('nonexistent'), isFalse);
+      bool isInUse = await registry.isNameInUse('test');
+      expect(isInUse, isTrue);
+
+      isInUse = await registry.isNameInUse('nonexistent');
+      expect(isInUse, isFalse);
     });
 
     test('getDefinitionNames should return all names', () async {
@@ -161,7 +164,9 @@ void main() {
       
       // Verify registration
       expect(registry.containsDefinition('test'), isTrue);
-      expect(registry.isNameInUse('test'), isTrue);
+
+      bool isInUse = await registry.isNameInUse('test');
+      expect(isInUse, isTrue);
       expect(registry.getNumberOfPodDefinitions(), equals(1));
       expect(registry.getDefinitionNames(), contains('test'));
       
@@ -174,7 +179,9 @@ void main() {
       
       // Verify removal
       expect(registry.containsDefinition('test'), isFalse);
-      expect(registry.isNameInUse('test'), isFalse);
+
+      isInUse = await registry.isNameInUse('test');
+      expect(isInUse, isFalse);
       expect(registry.getNumberOfPodDefinitions(), equals(0));
       expect(registry.getDefinitionNames(), isNot(contains('test')));
     });

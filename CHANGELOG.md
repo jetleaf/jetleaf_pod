@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.1+1] - 2025-11-19
+
+Patch release: Autowire candidates
+
+### Fixed
+
+- Fixed the recursive behaviour that occurs when resolving a dependency with multiple types.
+- Added more tests for the pod factory and its sub classes
+- Fixed test issues with the package
+
 ## [1.0.1] - 2025-11-17
 
 Patch release: dependency alignment and maintenance.

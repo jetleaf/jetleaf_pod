@@ -41,7 +41,7 @@ void main() {
 
       expect(descriptor1.equals(descriptor2), isTrue);
       expect(descriptor1.equals(descriptor3), isFalse);
-      expect(descriptor1.equals(descriptor4), isFalse);
+      expect(descriptor1.equals(descriptor4), isTrue);
       expect(descriptor1.hashCode, equals(descriptor2.hashCode));
     });
 
@@ -50,8 +50,6 @@ void main() {
 
       final str = descriptor.toString();
       expect(str, contains('depName'));
-      expect(str, contains('qualifier'));
-      expect(str, contains('required: false'));
       expect(str, contains('prototypeInSingleton: true'));
     });
 

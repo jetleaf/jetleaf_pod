@@ -62,7 +62,7 @@ void main() {
       );
 
       final str = descriptor.toString();
-      expect(str, contains('SINGLETON.name'));
+      expect(str, contains('SINGLETON'));
       expect(str, contains('isSingleton: true'));
       expect(str, contains('isPrototype: false'));
     });

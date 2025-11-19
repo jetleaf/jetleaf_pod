@@ -1417,7 +1417,7 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
                 // Explicitly remove instance from singleton cache: It might have been put there
                 // eagerly by the creation process, to allow for circular reference resolution.
                 // Also remove any pods that received a temporary reference to the pod.
-                destroySingleton(transformed);
+                await destroySingleton(transformed);
                 rethrow;
               }
             }

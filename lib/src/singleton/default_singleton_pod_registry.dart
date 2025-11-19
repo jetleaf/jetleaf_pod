@@ -544,9 +544,7 @@ class DefaultSingletonPodRegistry extends SimpleAliasRegistry implements Singlet
   bool isCurrentlyInCreation(String name) => !_currentlyExcludedPodsForCreationChecks.contains(name) && isActuallyInCreation(name);
   
   @override
-  bool containsSingleton(String name) {
-    return _singletons.containsKey(name) || _singletonFactories.containsKey(name);
-  }
+  bool containsSingleton(String name) => _singletons.containsKey(name) || _singletonFactories.containsKey(name);
   
   @override
   List<String> getSingletonNames() => synchronized(_singletons, () => List.from(_registeredSingletons));
@@ -571,13 +569,13 @@ class DefaultSingletonPodRegistry extends SimpleAliasRegistry implements Singlet
   /// ```
   /// {@endtemplate}
   @protected
-  void destroySingleton(String name) {
+  Future<void> destroySingleton(String name) async {
     // Destroy the corresponding DisposablePod instance
     var pod = _disposablePods[name];
     synchronized(_disposablePods, () => pod = _disposablePods.remove(name));
     
     if(pod != null) {
-      destroyPod(name, pod!.getValue());
+      await destroyPod(name, pod!.getValue());
     }
 
     // Remove a registered singleton of the given name, if any
@@ -589,7 +587,9 @@ class DefaultSingletonPodRegistry extends SimpleAliasRegistry implements Singlet
     return synchronized(_singletons, () {
       _singletons.remove(name);
       _singletonFactories.remove(name);
+      _singletonTypes.remove(name);
       _earlySingletons.remove(name);
+      _disposablePods.remove(name);
       _registeredSingletons.remove(name);
     });
   }
@@ -608,12 +608,12 @@ class DefaultSingletonPodRegistry extends SimpleAliasRegistry implements Singlet
   /// registry.destroySingletons();
   /// ```
   /// {@endtemplate}
-  void destroySingletons() {
+  Future<void> destroySingletons() async {
     synchronized(_singletons, () => _singletonsCurrentlyInDestruction = true);
     
     final names = List<String>.from(_disposablePods.keys);
     for (int i = names.length - 1; i >= 0; i--) {
-      destroySingleton(names[i]);
+      await destroySingleton(names[i]);
     }
     
     _containedPods.clear();
@@ -645,7 +645,7 @@ class DefaultSingletonPodRegistry extends SimpleAliasRegistry implements Singlet
   /// {@endtemplate}
   @protected
   Future<void> destroyPod(String name, Object pod) async  {
-    destroyDependentPods(name);
+    await destroyDependentPods(name);
     
     // Actually destroy the pod now
     try {
@@ -668,9 +668,10 @@ class DefaultSingletonPodRegistry extends SimpleAliasRegistry implements Singlet
     Set<String>? containedPods;
     synchronized(_containedPods, () => containedPods = _containedPods.remove(name));
 
+    print("Contained - $containedPods - $name");
     if (containedPods != null) {
       for (final containedPodName in containedPods!) {
-        destroySingleton(containedPodName);
+        await destroySingleton(containedPodName);
       }
     }
     
@@ -704,14 +705,14 @@ class DefaultSingletonPodRegistry extends SimpleAliasRegistry implements Singlet
   /// ```
   /// {@endtemplate}
   @protected
-  void destroyDependentPods(String name) {
+  Future<void> destroyDependentPods(String name) async {
     Set<String>? dependents;
 
     synchronized(_dependentPods, () => dependents = _dependentPods.remove(name));
 
     if (dependents != null) {
       for (final dependentName in dependents!) {
-        destroySingleton(dependentName);
+        await destroySingleton(dependentName);
       }
     }
   }
@@ -771,8 +772,8 @@ class DefaultSingletonPodRegistry extends SimpleAliasRegistry implements Singlet
   /// This method tracks which pods contain other pods for proper
   /// destruction ordering (contained pods are destroyed first).
   ///
-  /// [containedPodName]: The name of the pod that is contained
-  /// [containingPodName]: The name of the pod that does the containing
+  /// [child]: The name of the pod that is contained
+  /// [parent]: The name of the pod that does the containing
   ///
   /// Example:
   /// ```dart
@@ -781,10 +782,12 @@ class DefaultSingletonPodRegistry extends SimpleAliasRegistry implements Singlet
   /// ```
   /// {@endtemplate}
   @protected
-  void registerContainedPod(String containedPodName, String containingPodName) {
+  void registerContainedPod(String child, String parent) {
     synchronized(_containedPods, () {
-      final containedPods = _containedPods.putIfAbsent(containingPodName, () => <String>{});
-      containedPods.add(containedPodName);
+      final containedPods = _containedPods.putIfAbsent(parent, () => <String>{});
+      containedPods.add(child);
+
+      _containedPods[parent] = containedPods;
     });
   }
   

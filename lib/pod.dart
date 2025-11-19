@@ -71,6 +71,7 @@ export 'src/core/abstract_autowire_pod_factory.dart';
 export 'src/core/abstract_pod_factory.dart';
 export 'src/core/abstract_pod_provider_factory.dart';
 export 'src/core/default_listable_pod_factory.dart';
+export 'src/core/factory_aware_order_source_provider.dart';
 
 export 'src/definition/pod_definition_registry.dart';
 export 'src/definition/pod_definition.dart';

@@ -1,6 +1,6 @@
 name: jetleaf_pod
 description: Core module for dependency injection and pod lifecycle management.
-version: 1.0.1
+version: 1.0.1+1
 
 homepage: https://jetleaf.hapnium.com
 repository: https://github.com/jetleaf/jetleaf_pod
@@ -35,3 +35,4 @@ dependencies:
 dev_dependencies:
   test: ^1.21.0
   lints: ^6.0.0
+  mockito: ^5.5.1

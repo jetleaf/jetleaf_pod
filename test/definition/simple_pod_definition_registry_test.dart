@@ -96,16 +96,21 @@ void main() {
       expect(names, contains('pod2'));
     });
 
-    test('isNameInUse should check both definitions and aliases', () {
+    test('isNameInUse should check both definitions and aliases', () async {
       final pod = MockPodDefinition(name: 'TestPod', type: Class<String>());
       registry.registerDefinition('test', pod);
 
-      expect(registry.isNameInUse('test'), isTrue);
-      expect(registry.isNameInUse('nonexistent'), isFalse);
+      bool isInUse = await registry.isNameInUse('test');
+      expect(isInUse, isTrue);
+
+      isInUse = await registry.isNameInUse('nonexistent');
+      expect(isInUse, isFalse);
 
       // Test with aliases
       registry.registerAlias('test', 'alias');
-      expect(registry.isNameInUse('alias'), isTrue);
+
+      isInUse = await registry.isNameInUse('alias');
+      expect(isInUse, isTrue);
     });
 
     test('removeDefinition should remove pod', () {
@@ -198,21 +203,24 @@ void main() {
       expect(registry.getNumberOfPodDefinitions(), equals(10));
     });
 
-    test('should integrate with alias registry functionality', () {
+    test('should integrate with alias registry functionality', () async {
       final pod = MockPodDefinition(name: 'TestPod', type: Class<String>());
       registry.registerDefinition('original', pod);
       registry.registerAlias('original', 'alias');
 
       // Both original and alias should be considered "in use"
-      expect(registry.isNameInUse('original'), isTrue);
-      expect(registry.isNameInUse('alias'), isTrue);
+      bool isInUse = await registry.isNameInUse('original');
+      expect(isInUse, isTrue);
+
+      isInUse = await registry.isNameInUse('alias');
+      expect(isInUse, isTrue);
 
       // But only original should be in definitions
       expect(registry.containsDefinition('original'), isTrue);
       expect(registry.containsDefinition('alias'), isFalse);
     });
 
-    test('should handle mixed definition and alias operations', () {
+    test('should handle mixed definition and alias operations', () async {
       final pod1 = MockPodDefinition(name: 'Pod1', type: Class<String>());
       final pod2 = MockPodDefinition(name: 'Pod2', type: Class<int>());
 
@@ -222,12 +230,18 @@ void main() {
       registry.registerAlias('pod2', 'alias2');
 
       expect(registry.getNumberOfPodDefinitions(), equals(2));
-      expect(registry.isNameInUse('alias1'), isTrue);
-      expect(registry.isNameInUse('alias2'), isTrue);
+
+      bool isInUse = await registry.isNameInUse('alias1');
+      expect(isInUse, isTrue);
+
+      isInUse = await registry.isNameInUse('alias2');
+      expect(isInUse, isTrue);
 
       registry.removeDefinition('pod1');
       expect(registry.containsDefinition('pod1'), isFalse);
-      expect(registry.isNameInUse('alias1'), isFalse); // Alias should also be removed
+
+      isInUse = await registry.isNameInUse('alias1');
+      expect(isInUse, isFalse); // Alias should also be removed
     });
   });
 }

@@ -61,8 +61,7 @@ class TestBoth implements DisposablePod, Closeable {
   String getPackageName() => 'test.package';
 }
 
-class MockPodDestructionProcessor
-    extends PodDestructionProcessor {
+class MockPodDestructionProcessor extends PodDestructionProcessor {
   bool beforeCalled = false;
   bool afterCalled = false;
   bool requiresCalled = false;
@@ -211,17 +210,17 @@ void main() {
 
     test(
       'hasApplicableProcessors should return true when processors exist',
-      () {
+      () async {
         final pod = TestDisposablePod();
         final definition = RootPodDefinition(type: Class<TestDisposablePod>());
         final processor = MockPodDestructionProcessor();
 
-        expect(
-          DisposableLifecycleManager.hasApplicableProcessors(pod, definition, {
-            processor,
-          }),
-          isTrue,
+        final result = await DisposableLifecycleManager.hasApplicableProcessors(
+          pod,
+          definition,
+          {processor},
         );
+        expect(result, isTrue);
       },
     );
 
