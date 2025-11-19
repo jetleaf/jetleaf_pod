@@ -35,4 +35,3 @@ dependencies:
 dev_dependencies:
   test: ^1.21.0
   lints: ^6.0.0
-  mockito: ^5.5.1
