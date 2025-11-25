@@ -12,55 +12,115 @@
 // 
 // 🔧 Powered by Hapnium — the Dart backend engine 🍃
 
-/// 🫘 A lightweight, modular dependency injection (DI) and inversion-of-control (IoC) library.
+/// 🫘 **JetLeaf Pod Dependency Injection**
 ///
-/// The `jetleaf_pod` library provides a flexible set of factories, registries,
-/// definitions, and lifecycle hooks to manage object creation, dependency resolution,
-/// and application startup in a structured way.
+/// This library provides the core dependency-injection (DI) system used by
+/// JetLeaf, built around **pods**—lightweight, configurable, and pluggable
+/// components.
 ///
-/// ## 🫘 Overview
+/// It exposes the full pod lifecycle, factory system, scopes, definition
+/// registry, aliasing, name generation, and startup integration.
 ///
-/// - **Alias Registry** – Manage alternative names for pods (objects).
-/// - **Core Factories** – Define and resolve object creation strategies.
-/// - **Pod Definitions** – Represent metadata and configuration for pods.
-/// - **Expressions** – Evaluate or transform pod references.
-/// - **Helpers** – Utilities for nullable handling, enums, and object wrapping.
-/// - **Instantiation** – Strategies for creating pod instances.
-/// - **Lifecycle** – Hooks and processors for object lifecycle events.
-/// - **Name Generators** – Strategies for naming pods consistently.
-/// - **Scopes** – Contextual lifetimes (e.g., singleton, prototype).
-/// - **Singleton Registry** – Manage global singleton instances.
-/// - **Startup** – Application bootstrap and initialization.
-/// - **Exceptions** – Common error types for the DI container.
 ///
-/// ## 🫘 Example
+/// ## 🔑 Key Concepts
 ///
+/// ### 🫘 Pods
+/// A *pod* represents a managed dependency:
+/// - can be created on demand or eagerly
+/// - supports constructor, factory, and expression-based creation
+/// - participates in lifecycle processing
+///
+///
+/// ## 📦 Exports Overview
+///
+/// ### 🏷 Alias Management
+/// - `AliasRegistry` — maintains type/name indirections  
+/// - `SimpleAliasRegistry` — default implementation
+///
+/// Allows referencing pods under multiple names.
+///
+///
+/// ### 🏭 Core Factories
+/// - `PodFactory` — main access point for retrieving pods  
+/// - `AbstractPodFactory` — base type resolution logic  
+/// - `AbstractAutowirePodFactory` — constructor + dependency injection  
+/// - `AbstractPodProviderFactory` — provider-based resolution  
+/// - `DefaultListablePodFactory` — primary production implementation  
+/// - `FactoryAwareOrderSourceProvider` — ordering integration
+///
+/// The **factory** orchestrates creation, injection, and caching.
+///
+///
+/// ### 🧱 Pod Definitions
+/// - `PodDefinitionRegistry` — stores and manages definitions  
+/// - `PodDefinition` — metadata describing how a pod is created  
+/// - `SimplePodDefinitionRegistry` — default registry  
+/// - `commons.dart` — shared helpers
+///
+/// Definitions describe *what* a pod is before *creating* it.
+///
+///
+/// ### 🧮 Expressions
+/// - `PodExpression` — supports expression-based pod construction
+///
+/// Useful for dynamic or configuration-driven instantiation.
+///
+///
+/// ### 🧰 Helper Types
+/// - enums and utility classes supporting DI behavior  
+/// - `NullablePod` — safe optional pod access  
+/// - object utilities for injection resolution
+///
+///
+/// ### ⚙️ Instantiation Pipeline
+/// - `ExecutableStrategy` — determines how a pod is created  
+/// - `ArgumentValueHolder` — stores resolved constructor arguments
+///
+///
+/// ### 🔄 Lifecycle Management
+/// - `PodProcessors` — post-processing callbacks  
+/// - `Lifecycle` — initialization and destruction phases
+///
+/// Enables customization hooks similar to post-processors.
+///
+///
+/// ### 🏷 Name Generation
+/// - `PodNameGenerator` — strategy for naming pods  
+/// - `SimplePodNameGenerator` — default implementation
+///
+///
+/// ### 📍 Scopes
+/// - `Scope` — defines lifecycle boundaries (singleton, prototype, etc.)
+///
+///
+/// ### ♾️ Singleton Handling
+/// - `SingletonPodRegistry` — manages cached pod instances
+///
+///
+/// ### 🚀 Application Startup
+/// - `Startup` — DI startup abstraction  
+/// - `ApplicationStartup` — bootstrapping integration
+///
+/// Supports ordered and observable initialization.
+///
+///
+/// ### ⚠️ Exceptions
+/// - framework-level errors for invalid definitions, cycles, and resolution failures
+///
+///
+/// ## 🎯 Intended Usage
+///
+/// Most applications will obtain pods through the factory:
 /// ```dart
-/// import 'package:jetleaf_pod/jetleaf_pod.dart';
-///
-/// void main() {
-///   final factory = DefaultListablePodFactory();
-///
-///   factory.registerDefinition(
-///     PodDefinition(
-///       name: 'service',
-///       create: () => MyService(),
-///     ),
-///   );
-///
-///   final service = factory.getPod<MyService>('service');
-///   service.run();
-/// }
+/// final factory = DefaultListablePodFactory();
+/// final service = factory.getPod('myService');
 /// ```
 ///
-/// ## 🫘 Key Benefits
+/// This system is designed for framework composition, plugin ecosystems,
+/// and advanced application architectures.
 ///
-/// - Lightweight and modular.
-/// - Flexible factories, scopes, and lifecycle processors.
-/// - Extensible with custom implementations.
-/// - Application-ready with startup orchestration.
 ///
-/// See the individual sub-libraries for detailed API documentation.
+/// © 2025 Hapnium & JetLeaf Contributors
 library;
 
 export 'src/alias/alias_registry.dart';

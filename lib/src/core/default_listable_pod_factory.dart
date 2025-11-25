@@ -453,13 +453,13 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
 
         if (!definition.isAbstractAndNoFactory() && (allowEagerInit || notLazy || !await _requiresEagerInit(name))) {
           final isPp = await isPodProvider(name);
-          final allowPpInit = allowEagerInit || containsSingleton(name);
+          // final allowPpInit = allowEagerInit || containsSingleton(name);
           final isS = await isSingleton(name);
 
           if (cls == type || cls.isSubclassOf(type) || type.isAssignableFrom(cls) || type.isInstance(cls)) {
             if (!isPp) {
               if (includeNonSingletons || isS) {
-                if (allowPpInit) {
+                if (allowEagerInit) {
                   await get(type);
                 }
                 
@@ -468,7 +468,7 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
             } else {
               name = podProviderName(name);
               if (includeNonSingletons || isS) {
-                if (allowPpInit) {
+                if (allowEagerInit) {
                   await get(type);
                 }
                 
@@ -812,10 +812,23 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
 
     // Instantiate processors first
     for (final name in podNames) {
+      final stopwatch = Stopwatch();
+      stopwatch.start();
+
+      if (logger.getIsTraceEnabled()) {
+        logger.trace("Instantiating singleton pod of $name");
+      }
+
       final entry = await instantiateSingletonPod(name);
       if (entry != null) {
         final value = entry.value;
         pods[entry.key] = value;
+      }
+
+      stopwatch.stop();
+      
+      if (logger.getIsTraceEnabled()) {
+        logger.trace("Completed instantiation of pod $name. Took ${stopwatch.elapsedMilliseconds}ms.");
       }
     }
 
@@ -1065,6 +1078,10 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
     final podName = descriptor.podName;
     final lookup = descriptor.lookup;
 
+    if (logger.getIsTraceEnabled()) {
+      logger.trace("Resolving dependency of $podName with type $type, with the lookup $lookup");
+    }
+
     // 🔹 Special handling for ObjectFactory / ObjectProvider / (dart's class with the factory design)
     if (Class<ObjectFactory>(null, PackageNames.POD).isAssignableFrom(type) && !Class<ObjectProvider>(null, PackageNames.POD).isAssignableFrom(type)) {
       return ObjectFactoryDependency<Object>(descriptor, this);
@@ -1088,6 +1105,11 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
         }
 
         final result = await _get(dependencyName, type);
+        
+        if (logger.getIsTraceEnabled()) {
+          logger.trace("Done resolving dependency with the lookup name $lookup");
+        }
+
         return verifyInstance(result, type, dependencyName, descriptor);
       }
     }
@@ -1161,6 +1183,11 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
 
     if (instanceCandidate != null) {
       final instance = convertIfNecessary(podName, instanceCandidate, type);
+      
+      if (logger.getIsTraceEnabled()) {
+        logger.trace("Done resolving dependency for $podName with type $type.");
+      }
+
       return verifyInstance(instance, type, podName, descriptor);
     }
 
@@ -1421,101 +1448,47 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
   @protected
   Future<Map<String, Object>> findAutowireCandidates(String? podName, DependencyDescriptor descriptor) async {
     final candidates = <String, Object>{};
-    final names = await doFindAutowireCandidates(podName, descriptor);
+    final names = await PodUtils.podNamesForTypeIncludingAncestors(this, descriptor.type, includeNonSingletons: true, allowEagerInit: false);
 
-    for (final candidate in names) {
-      if (containsSingleton(candidate)) {
-        // Early reference handling
-        final earlyRef = await getSingletonCache(candidate);
-        final value = earlyRef?.getValue();
+    if (logger.getIsTraceEnabled()) {
+      logger.trace("Candidates for autowiring in $podName: $names");
+    }
 
-        if (value != null) {
-          candidates[candidate] = value;
-        } else {
-          // Might throw exception instead of this...
+    for (final name in names) {
+      // Check if pod is an autowire candidate
+      if (isAutowireCandidate(name, descriptor) && !selfReferenced(podName, name)) {
+        if (containsSingleton(name)) {
+          // Early reference handling
+          
+          if (logger.getIsTraceEnabled()) {
+            logger.trace("Getting singleton cache for candidate $name");
+          }
+
+          final earlyRef = await getSingletonCache(name);
+          final value = earlyRef?.getValue();
+
+          if (value != null) {
+            candidates[name] = value;
+          } else {
+            // Might throw exception instead of this...
+          }
         }
-      }
 
-      if (!candidates.containsKey(candidate)) {
-        candidates[candidate] = await getPod(candidate);
+        if (!candidates.containsKey(name)) {
+          if (logger.getIsTraceEnabled()) {
+            logger.trace("Getting autowire candidate pod for $name");
+          }
+
+          candidates[name] = await getPod(name);
+        }
+
+        if (logger.getIsTraceEnabled()) {
+          logger.trace("Received autowire candidate pod for $name");
+        }
       }
     }
     
     return candidates;
-  }
-
-  /// {@template doFindAutowireCandidates}
-  /// Resolves all pod names that are eligible as autowiring candidates
-  /// for a given dependency.
-  ///
-  /// This method is responsible for identifying **which pods can satisfy a
-  /// constructor parameter, field injection, or method injection target**
-  /// represented by the provided [DependencyDescriptor].
-  ///
-  /// JetLeaf follows a Spring-like resolution strategy:
-  /// 
-  /// 1. **Determine the target dependency type**  
-  ///    Extracted from `descriptor.type`.
-  ///
-  /// 2. **Locate all pods whose declared type matches the dependency**, including:
-  ///    - direct type matches  
-  ///    - implementations of the type  
-  ///    - subclasses  
-  ///    - pods matching ancestor types or interfaces  
-  ///
-  ///    This search is delegated to:
-  ///    ```dart
-  ///    PodUtils.podNamesForTypeIncludingAncestors(...)
-  ///    ```
-  ///
-  /// 3. **Filter out pods that are not eligible for autowiring**, using:  
-  ///    ```dart
-  ///    isAutowireCandidate(name, descriptor)
-  ///    ```
-  ///    This accounts for rules such as:
-  ///    - primary precedence
-  ///    - qualifiers
-  ///    - visibility rules
-  ///    - conditional registration
-  ///
-  /// 4. **Prevent self-references during construction**, using:
-  ///    ```dart
-  ///    selfReferenced(podName, name)
-  ///    ```
-  ///    This avoids accidental circular dependencies such as injecting the
-  ///    currently-constructed pod into itself.
-  ///
-  /// 5. **Return the resulting candidate list** as a `List<String>`.
-  ///
-  /// ### Example
-  /// ```dart
-  /// final descriptor = DependencyDescriptor(type: MyService);
-  /// final candidates = await doFindAutowireCandidates("controller", descriptor);
-  /// print(candidates); // → ["myServiceImpl"]
-  /// ```
-  ///
-  /// ### Notes
-  /// - This method never instantiates pods; it only resolves names.
-  /// - Candidate discovery respects ancestor types unless explicitly disabled.
-  /// - Returned order is not guaranteed; selection is performed by higher-level
-  ///   autowiring logic (primary, qualifiers, priorities, etc.).
-  ///
-  /// {@endtemplate}
-  @protected
-  Future<List<String>> doFindAutowireCandidates(String? podName, DependencyDescriptor descriptor) async {
-    final candidates = <String>{};
-    final type = descriptor.type;
-    
-    final names = await PodUtils.podNamesForTypeIncludingAncestors(this, type, includeNonSingletons: true, allowEagerInit: false);
-    
-    for (final name in names) {
-      // Check if pod is an autowire candidate
-      if (isAutowireCandidate(name, descriptor) && !selfReferenced(podName, name)) {
-        candidates.add(name);
-      }
-    }
-    
-    return candidates.toList();
   }
 
   /// {@template default_listable_pod_factory.determine_autowire_candidate}

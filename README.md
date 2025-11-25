@@ -24,8 +24,7 @@ A lightweight, modular dependency injection (DI) and inversion-of-control (IoC) 
 
 ```yaml
 dependencies:
-  jetleaf_pod:
-    path: ./jetleaf_pod
+  jetleaf_pod: ^1.0.0
 ```
 
 ### Basic Usage
