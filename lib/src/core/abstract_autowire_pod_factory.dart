@@ -133,12 +133,17 @@ abstract class AbstractAutowirePodFactory extends AbstractPodFactory implements 
   late InitMethodsManager _initMethodsManager;
 
   /// {@macro executableStrategy}
-  /// Strategy for constructor and method resolution.
+  /// Defines the strategy used to resolve and invoke constructors and methods
+  /// when instantiating pods.
   ///
-  /// Determines how constructors and factory methods are selected and invoked
-  /// during pod instantiation.
+  /// This determines how the framework selects constructors or factory methods
+  /// and how they are executed during pod creation.
   late ExecutableStrategy _executableStrategy;
 
+  /// Holds metadata for all pods that have been created.
+  ///
+  /// Each entry tracks a single instantiated pod, including its type,
+  /// lifecycle information, and any associated initialization data.
   final List<CreatedPodHolder> _createdPods = [];
 
   /// {@macro abstract_autowire_pod_factory}
