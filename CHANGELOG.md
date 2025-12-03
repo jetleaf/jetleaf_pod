@@ -2,23 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.0.5] - 2025-12-1
+## [1.0.6]
 
 - Updated dependencies
 
-## [1.0.4] - 2025-11-28
+## [1.0.5]
 
 - Updated dependencies
 
-## [1.0.3] - 2025-11-26
+## [1.0.4]
 
 - Updated dependencies
 
-## [1.0.2] - 2025-11-25
+## [1.0.3]
 
 - Updated dependencies
 
-## [1.0.1+1] - 2025-11-19
+## [1.0.2]
+
+- Updated dependencies
+
+## [1.0.1+1]
 
 Patch release: Autowire candidates
 
@@ -28,7 +32,7 @@ Patch release: Autowire candidates
 - Added more tests for the pod factory and its sub classes
 - Fixed test issues with the package
 
-## [1.0.1] - 2025-11-17
+## [1.0.1]
 
 Patch release: dependency alignment and maintenance.
 
@@ -36,7 +40,7 @@ Patch release: dependency alignment and maintenance.
 
 - Updated dependency pins and internal housekeeping to align with other JetLeaf packages.
 
-## [1.0.0] - 2025-11-17
+## [1.0.0]
 
 Initial release.
 
