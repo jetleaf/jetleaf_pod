@@ -14,6 +14,8 @@
 
 import 'dart:async';
 
+import 'package:jetleaf_lang/lang.dart';
+
 import '../core/default_listable_pod_factory.dart';
 import '../core/pod_factory.dart';
 import '../exceptions.dart';
@@ -52,6 +54,7 @@ import '../helpers/object.dart';
 /// - Throws [PodDefinitionStoreException] if no pod of the given type is defined.
 /// - Ensures precise error messages with pod name and type information.
 /// {@endtemplate}
+@Generic(ObjectFactoryDependency)
 class ObjectFactoryDependency<T> extends ObjectFactory<T> {
   /// The dependency metadata describing what is being resolved.
   final DependencyDescriptor descriptor;

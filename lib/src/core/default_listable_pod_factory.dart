@@ -508,7 +508,7 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
         result.add(name);
       } else if (definition.type.hasDirectAnnotation<A>()) {
         result.add(name);
-      } else if (definition.type.getAllDirectAnnotations().any((a) => a.getClass() == type)) {
+      } else if (definition.type.getAllDirectAnnotations().any((a) => a.getDeclaringClass() == type)) {
         result.add(name);
       }
     }

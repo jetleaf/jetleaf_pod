@@ -185,37 +185,34 @@ class PodCreationException extends FatalPodException {
 /// ```
 /// {@endtemplate}
 class NoSuchPodDefinitionException extends PodException {
-  final String? name;
-  final ResolvableType? resolvableType;
+  final String? _name;
+  final Class? _type;
 
   /// Create a new [NoSuchPodDefinitionException] by pod name.
-  NoSuchPodDefinitionException.byName(String this.name)
-    : resolvableType = null, super("No pod named '$name' available in the current context");
+  NoSuchPodDefinitionException.byName(String this._name)
+    : _type = null, super("No pod named '$_name' available in the current context");
 
   /// Create a new [NoSuchPodDefinitionException] by pod name with custom message.
-  NoSuchPodDefinitionException.byNameWithMessage(String this.name, String message)
-    : resolvableType = null, super("No pod named '$name' available: $message");
+  NoSuchPodDefinitionException.byNameWithMessage(String this._name, String message)
+    : _type = null, super("No pod named '$_name' available: $message");
 
   /// Create a new [NoSuchPodDefinitionException] by type.
   NoSuchPodDefinitionException.byType(Class type)
-    : name = null,
-      resolvableType = ResolvableType.forClass(type.getOriginal()),
+    : _name = null,
+      _type = type,
       super("No qualifying pod of type '${type.getQualifiedName()}' available in the current context");
 
   /// Create a new [NoSuchPodDefinitionException] by type with custom message.
   NoSuchPodDefinitionException.byTypeWithMessage(Class type, String message)
-    : name = null,
-      resolvableType = ResolvableType.forClass(type.getOriginal()),
+    : _name = null,
+      _type = type,
       super("No qualifying pod of type '${type.getQualifiedName()}' available: $message");
 
   /// Return the name of the missing pod, if lookup by name failed.
-  String? getPodName() => name;
+  String? getPodName() => _name;
 
   /// Return the required type of the missing pod, if lookup by type failed.
-  Class? getPodType() => resolvableType?.resolve();
-
-  /// Return the required [ResolvableType] of the missing pod, if lookup by type failed.
-  ResolvableType? getResolvableType() => resolvableType;
+  Class? getPodType() => _type;
 
   /// Number of pods found when only one was expected.
   /// For a normal NoSuchPodDefinitionException, always `0`.

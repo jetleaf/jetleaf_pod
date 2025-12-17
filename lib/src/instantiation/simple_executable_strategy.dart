@@ -281,7 +281,7 @@ final class SimpleExecutableStrategy implements ExecutableStrategy {
     final positionalArgs = <Object?>[];
 
     for (final param in parameters) {
-      final paramClass = param.getClass();
+      final paramClass = param.getReturnClass();
       final paramName = param.getName();
 
       final existing = merged.find((a) => _paramMatchesArgument(param, a));
@@ -423,7 +423,7 @@ final class SimpleExecutableStrategy implements ExecutableStrategy {
         }
 
         existing = merged.find((a) => _paramMatchesArgument(param, a));
-        if ((existing == null || existing.getValue() == null) && param.isRequired()) {
+        if ((existing == null || existing.getValue() == null) && param.mustBeResolved()) {
           _logger.warn(
             "Failed to resolve required parameter '$paramName' (type=${paramClass.getQualifiedName()}) "
             "for executable '${executable.getName()}' of pod '${definition.name}'",
@@ -506,11 +506,11 @@ final class SimpleExecutableStrategy implements ExecutableStrategy {
       return true;
     }
 
-    if (argument.getQualifiedName().equals(parameter.getClass().getQualifiedName())) {
+    if (argument.getQualifiedName().equals(parameter.getReturnClass().getQualifiedName())) {
       return true;
     }
 
-    return _typeMatches(parameter.getClass(), argument.getType());
+    return _typeMatches(parameter.getReturnClass(), argument.getType());
   }
 
   /// {@template simple_executable_strategy.type_matches}

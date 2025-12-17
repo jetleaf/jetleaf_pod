@@ -9,6 +9,7 @@ import 'package:jetleaf_pod/src/helpers/enums.dart';
 import 'package:jetleaf_pod/src/core/pod_factory.dart';
 import 'package:jetleaf_pod/src/helpers/nullable_pod.dart';
 import 'package:jetleaf_lang/lang.dart';
+import 'package:jetleaf_lang/jetleaf_lang.dart' show Declaration;
 
 import '../_dependencies.dart';
 
@@ -43,11 +44,15 @@ class _DummySource extends Source {
 
   @override
   ProtectionDomain getProtectionDomain() => ProtectionDomain.current();
+
   @override
   String getSignature() => '';
 
   @override
   bool isPublic() => true;
+
+  @override
+  Version? getVersion() => null;
 }
 
 /// Subclass wrapper to expose protected methods for testing

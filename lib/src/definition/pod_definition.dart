@@ -224,8 +224,8 @@ abstract class PodDefinition with EqualsAndHashCode, ToString {
 
     for (final annotation in cls.getAllDirectAnnotations()) {
       annotations.add(annotation);
-      annotatedClasses.add(annotation.getClass());
-      _collectAnnotations(annotation.getClass(), visited);
+      annotatedClasses.add(annotation.getDeclaringClass());
+      _collectAnnotations(annotation.getDeclaringClass(), visited);
     }
   }
 
