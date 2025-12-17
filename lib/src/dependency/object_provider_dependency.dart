@@ -65,6 +65,7 @@ import 'object_factory_dependency.dart';
 /// - Objects are eagerly collected in `_buildObjects`.
 /// - `isEmpty` and `toList` delegate to the current stream state.
 /// {@endtemplate}
+@Generic(ObjectProviderDependency)
 final class ObjectProviderDependency<T> extends ObjectFactoryDependency<T> implements ObjectProvider<T> {
   /// All candidate object holders for this type.
   List<ObjectHolder<T>> objects = [];
