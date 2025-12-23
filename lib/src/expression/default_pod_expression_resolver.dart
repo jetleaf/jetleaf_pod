@@ -103,7 +103,7 @@ final class DefaultPodExpression implements PodExpression<Object> {
 
   @override
   Future<ObjectHolder<Object>> evaluate(PodExpressionContext context) {
-    String? packageName = expression.getClass().getPackage()?.getName();
+    String? packageName = expression.getClass().getPackage().getName();
     String? qualifiedName = expression.getClass().getQualifiedName();
 
     return Future.value(

@@ -329,7 +329,7 @@ abstract class AbstractPodProviderFactory extends DefaultSingletonPodRegistry {
         throw PodCurrentlyInCreationException(name: name, cause: RuntimeException("PodProvider which is currently in creation returned null"));
       }
 
-      object = ObjectHolder<Object>(NullablePod(), packageName: NullablePod.CLASS.getPackage()?.getName(), qualifiedName: NullablePod.CLASS.getQualifiedName());
+      object = ObjectHolder<Object>(NullablePod(), packageName: NullablePod.CLASS.getPackage().getName(), qualifiedName: NullablePod.CLASS.getQualifiedName());
     }
 
     return object;

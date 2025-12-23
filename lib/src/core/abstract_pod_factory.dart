@@ -875,13 +875,13 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
   @override
   Future<T> get<T>(Class<T> type, [List<ArgumentValue>? args]) async {
     final definition = getDefinitionByClass(type);
-    final classType = Class.fromQualifiedName<Object>(definition.type.getQualifiedName());
+    final classType = Class<Object>.fromQualifiedName(definition.type.getQualifiedName());
     return await doGet(definition.name, classType, args) as T;
   }
 
   @override
   Future<T> getPod<T>(String name, [List<ArgumentValue>? args, Class<T>? type]) async {
-    final classType = type != null ? Class.fromQualifiedName<Object>(type.getQualifiedName()) : null;
+    final classType = type != null ? Class<Object>.fromQualifiedName(type.getQualifiedName()) : null;
     return await doGet(name, classType, args) as T;
   }
 
@@ -1344,7 +1344,7 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
           }
 
           final merged = getLocalMergedPodDefinition(transformed);
-          type ??= Class.fromQualifiedName<Object>(merged.type.getQualifiedName());
+          type ??= Class<Object>.fromQualifiedName(merged.type.getQualifiedName());
 
           checkMergedPodDefinition(merged, transformed, args);
 
@@ -1410,7 +1410,7 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
               try {
                 return ObjectHolder(
                   await doCreate(transformed, merged, args),
-                  packageName: type?.getPackage()?.getName(),
+                  packageName: type?.getPackage().getName(),
                   qualifiedName: type?.getQualifiedName(),
                 );
               } on PodException catch (_) {
@@ -1462,7 +1462,7 @@ abstract class AbstractPodFactory extends AbstractPodProviderFactory implements 
                     try {
                       return ObjectHolder(
                         await doCreate(transformed, merged, args),
-                        packageName: type?.getPackage()?.getName(),
+                        packageName: type?.getPackage().getName(),
                         qualifiedName: type?.getQualifiedName(),
                       );
                     } finally {

@@ -677,7 +677,7 @@ abstract class AbstractAutowirePodFactory extends AbstractPodFactory implements 
   /// @param parameters The parameters of the executable
   /// @return The candidate arguments
   @protected
-  Future<List<ArgumentValue>?> determineCandidateArguments(String podName, Executable executable, List<Parameter> parameters) async {
+  Future<List<ArgumentValue>?> determineCandidateArguments(String podName, Executable executable, Iterable<Parameter> parameters) async {
     if (hasPodSmartInstantiationProcessors()) {
       for (final iap in getPodSmartInstantiationProcessors()) {
         final args = await iap.determineCandidateArguments(podName, executable, parameters);
@@ -807,7 +807,7 @@ abstract class AbstractAutowirePodFactory extends AbstractPodFactory implements 
           root,
           ObjectHolder(
             pod,
-            packageName: podClass.getPackage()?.getName(),
+            packageName: podClass.getPackage().getName(),
             qualifiedName: podClass.getQualifiedName(),
           ),
         );
@@ -1130,7 +1130,7 @@ abstract class AbstractAutowirePodFactory extends AbstractPodFactory implements 
           propertyName,
           pod,
           qualifiedName: type.getQualifiedName(),
-          packageName: type.getPackage()?.getName(),
+          packageName: type.getPackage().getName(),
         );
         registerDependentPod(propertyName, podName);
 
@@ -1242,7 +1242,7 @@ abstract class AbstractAutowirePodFactory extends AbstractPodFactory implements 
               propertyName,
               autowiredValue,
               qualifiedName: type.getQualifiedName(),
-              packageName: type.getPackage()?.getName(),
+              packageName: type.getPackage().getName(),
             );
 
             if (logger.getIsTraceEnabled()) {
@@ -1286,7 +1286,7 @@ abstract class AbstractAutowirePodFactory extends AbstractPodFactory implements 
                 propertyName,
                 autowiredValue,
                 qualifiedName: type.getQualifiedName(),
-                packageName: type.getPackage()?.getName(),
+                packageName: type.getPackage().getName(),
               );
 
               if (logger.getIsTraceEnabled()) {

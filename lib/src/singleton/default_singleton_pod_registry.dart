@@ -986,7 +986,7 @@ class DefaultSingletonPodRegistry extends SimpleAliasRegistry implements Singlet
 /// ```dart
 /// // Suppose `DatabaseService` is a Jetleaf-managed class.
 /// final db = DatabaseService();
-/// final type = Class.of(DatabaseService);
+/// final type = Class.forType(DatabaseService);
 ///
 /// final typed = TypedInstance(db, type);
 ///
@@ -1032,7 +1032,7 @@ final class TypedInstance {
   ///
   /// Example:
   /// ```dart
-  /// final typed = TypedInstance(service, Class.of(service.runtimeType));
+  /// final typed = TypedInstance(service, Class.forType(service.runtimeType));
   /// ```
   /// {@endtemplate}
   TypedInstance(this.value, this.type);

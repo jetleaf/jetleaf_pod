@@ -52,7 +52,7 @@ class _DummySource extends Source {
   bool isPublic() => true;
 
   @override
-  Version? getVersion() => null;
+  Version getVersion() => Version(0, 0, 0);
 }
 
 /// Subclass wrapper to expose protected methods for testing

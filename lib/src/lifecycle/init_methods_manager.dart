@@ -122,24 +122,20 @@ final class InitMethodsManager {
   /// Finds an initialization method by name in the pod class hierarchy
   Method? _findInitMethod(Class podClass, String methodName) {
     // Try to find the method in the pod class
-    Method? method = podClass.getMethod(methodName);
-    if (method != null) {
+    if (podClass.getMethod(methodName) case final method?) {
       return method;
     }
 
     // Try to find the method in the pod's superclass
-    final superClass = podClass.getDeclaredSuperClass();
-    if (superClass != null) {
-      method = superClass.getMethod(methodName);
-      if (method != null) {
+    if (podClass.getSuperClass() case final superClass?) {
+      if (superClass.getMethod(methodName) case final method?) {
         return method;
       }
     }
     
     // Try to find the method in the pod's interfaces
     for (final interface in podClass.getAllInterfaces()) {
-      method = interface.getMethod(methodName);
-      if (method != null) {
+      if (interface.getMethod(methodName) case final method?) {
         return method;
       }
     }

@@ -391,6 +391,6 @@ class DefaultObjectProvider<T> extends ObjectProvider<T> {
   Future<ObjectHolder<T>> _get(List<ArgumentValue>? args) async {
     final result = await _factory.getPod<T>(_podName, args);
     final cls = await _factory.getPodClass(_podName);
-    return ObjectHolder<T>(result, qualifiedName: cls.getQualifiedName(), packageName: cls.getPackage()?.getName());
+    return ObjectHolder<T>(result, qualifiedName: cls.getQualifiedName(), packageName: cls.getPackage().getName());
   }
 }

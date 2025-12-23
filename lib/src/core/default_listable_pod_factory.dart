@@ -604,7 +604,7 @@ class DefaultListablePodFactory extends AbstractAutowirePodFactory implements Co
     final result = await getPodsOf<T>(type, includeNonSingletons: true, allowEagerInit: allowEagerInit);
     if (result.isNotEmpty) {
       for (final value in result.values) {
-        objects.add(ObjectHolder<T>(value, qualifiedName: type.getQualifiedName(), packageName: type.getPackage()?.getName()));
+        objects.add(ObjectHolder<T>(value, qualifiedName: type.getQualifiedName(), packageName: type.getPackage().getName()));
       }
     }
 
