@@ -96,7 +96,7 @@ final class ObjectProviderDependency<T> extends ObjectFactoryDependency<T> imple
         if (cls != null && converted is T) {
           objects.add(ObjectHolder(
             converted,
-            packageName: cls.getPackage()?.getName(),
+            packageName: cls.getPackage().getName(),
             qualifiedName: cls.getQualifiedName(),
           ));
         }
@@ -110,7 +110,7 @@ final class ObjectProviderDependency<T> extends ObjectFactoryDependency<T> imple
 
       objects.add(ObjectHolder(
         converted,
-        packageName: cls.getPackage()?.getName(),
+        packageName: cls.getPackage().getName(),
         qualifiedName: cls.getQualifiedName(),
       ));
     }

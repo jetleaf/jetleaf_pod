@@ -480,7 +480,7 @@ abstract class PodSmartInstantiationProcessor extends PodInstantiationProcessor 
   /// }
   /// ```
   /// {@endtemplate}
-  Future<List<ArgumentValue>?> determineCandidateArguments(String podName, Executable executable, List<Parameter> parameters) async => null;
+  Future<List<ArgumentValue>?> determineCandidateArguments(String podName, Executable executable, Iterable<Parameter> parameters) async => null;
 
   /// {@template getEarlyPodReference}
   /// Provides an early reference to a pod before its initialization completes.

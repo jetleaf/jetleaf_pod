@@ -292,24 +292,20 @@ class DisposableLifecycleManager implements DisposablePod, Runnable {
   /// [destroyMethodName]: The name of the destroy method to look for
   Method? _determineMethodToUse(String destroyMethodName) {
     // Try to find the method in the pod class
-    final method = _podClass.getMethod(destroyMethodName);
-    if (method != null) {
+    if (_podClass.getMethod(destroyMethodName) case final method?) {
       return method;
     }
 
     // Try to find the method in the pod's superclass if not found in the pod class
-    final superClass = _podClass.getDeclaredSuperClass();
-    if (superClass != null) {
-      final method = superClass.getMethod(destroyMethodName);
-      if (method != null) {
+    if (_podClass.getSuperClass() case final superClass?) {
+      if (superClass.getMethod(destroyMethodName) case final method?) {
         return method;
       }
     }
 
     // Try to find the method in the pod's interfaces if not found in the pod class or superclass
     _podClass.getAllInterfaces().process((interface) {
-      final method = interface.getMethod(destroyMethodName);
-      if (method != null) {
+      if (interface.getMethod(destroyMethodName) case final method?) {
         return method;
       }
     });

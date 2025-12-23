@@ -86,7 +86,7 @@ class ObjectFactoryDependency<T> extends ObjectFactory<T> {
         final converted = listablePodFactory.convertIfNecessary(component.getName(), result, component);
         return ObjectHolder(
           converted,
-          packageName: component.getPackage()?.getName(),
+          packageName: component.getPackage().getName(),
           qualifiedName: component.getQualifiedName(),
         );
       } else {

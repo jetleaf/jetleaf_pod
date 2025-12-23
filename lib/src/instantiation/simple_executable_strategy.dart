@@ -298,7 +298,7 @@ final class SimpleExecutableStrategy implements ExecutableStrategy {
         final resolvedArg = ArgumentValue(
           existing.getValue(),
           qualifiedName: paramClass.getQualifiedName(),
-          packageName: paramClass.getPackage()?.getName(),
+          packageName: paramClass.getPackage().getName(),
           name: paramName,
         );
 
@@ -365,7 +365,7 @@ final class SimpleExecutableStrategy implements ExecutableStrategy {
             final resolvedArg = ArgumentValue(
               resolvedValue,
               qualifiedName: paramClass.getQualifiedName(),
-              packageName: paramClass.getPackage()?.getName(),
+              packageName: paramClass.getPackage().getName(),
               name: paramName,
             );
 
@@ -403,7 +403,7 @@ final class SimpleExecutableStrategy implements ExecutableStrategy {
           final resolvedArg = ArgumentValue(
             resolvedValue,
             qualifiedName: paramClass.getQualifiedName(),
-            packageName: paramClass.getPackage()?.getName(),
+            packageName: paramClass.getPackage().getName(),
             name: paramName,
           );
 
@@ -444,7 +444,7 @@ final class SimpleExecutableStrategy implements ExecutableStrategy {
           final resolvedArg = ArgumentValue(
             resolvedValue,
             qualifiedName: paramClass.getQualifiedName(),
-            packageName: paramClass.getPackage()?.getName(),
+            packageName: paramClass.getPackage().getName(),
             name: paramName,
           );
 
