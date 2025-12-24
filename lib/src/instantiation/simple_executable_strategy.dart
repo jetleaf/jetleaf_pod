@@ -326,6 +326,8 @@ final class SimpleExecutableStrategy implements ExecutableStrategy {
         }
 
         Object? resolvedValue;
+        Object? lastException;
+        StackTrace? lastStackTrace;
         if (!paramClass.isPrimitive()) {
           if (_logger.getIsTraceEnabled()) {
             _logger.trace("  Attempting autowire-by-type for parameter '$paramName' (type=${paramClass.getQualifiedName()})");
@@ -355,6 +357,8 @@ final class SimpleExecutableStrategy implements ExecutableStrategy {
             }
             // resolution failure will be handled by defaults/optional/exception below
             resolvedValue = null;
+            lastException = e;
+            lastStackTrace = st;
           }
 
           if (resolvedValue != null) {
@@ -428,6 +432,8 @@ final class SimpleExecutableStrategy implements ExecutableStrategy {
             "Failed to resolve required parameter '$paramName' (type=${paramClass.getQualifiedName()}) "
             "for executable '${executable.getName()}' of pod '${definition.name}'",
           );
+
+          if (lastException != null && (lastException is Error || lastException is Exception)) Error.throwWithStackTrace(lastException, lastStackTrace!); 
 
           throw PodException(
             "Cannot resolve required ${param.isNamed() ? 'named' : 'positional'} executable parameter "
