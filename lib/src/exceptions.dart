@@ -605,3 +605,175 @@ class PodDefinitionOverrideException extends PodException {
   /// {@macro pod_definition_override_exception}
   PodDefinitionOverrideException(String name) : super("Cannot override pod definition '$name'. Allow definition overriding is disabled");
 }
+
+/// {@template circular_dependency_exception}
+/// Thrown when a **circular dependency** is detected within the framework's
+/// dependency graph, interceptor ordering, or initialization process.
+///
+/// This exception indicates that one or more components depend on each other
+/// in a way that prevents resolution.
+///
+/// Circular dependencies may occur in several forms, including:
+///
+/// - **Interceptors** that declare conflicting `@RunBefore` / `@RunAfter`
+///   relationships forming a cycle.
+/// - **Dependency-injected services or pods** that recursively depend on
+///   one another through constructors, factories, or providers.
+///
+///
+/// ### Dependency Cycle
+///
+/// The [cycle] field contains a [DependencyCycle] describing the detected
+/// circular reference.
+///
+/// The cycle represents a *closed dependency path* in which resolution cannot
+/// proceed. If detailed cycle information is unavailable, a
+/// [NoOpDependencyCycle] is used as a safe default.
+///
+/// Implementations of [DependencyCycle] are framework-specific and may
+/// represent:
+///
+/// - Ordered class or type paths (e.g. `A → B → C → A`)
+/// - Interceptor ordering chains
+/// - Module or plugin initialization loops
+///
+///
+/// ### Example
+///
+/// ```dart
+/// // A depends on B, and B depends on A
+/// class A {
+///   A(B b);
+/// }
+///
+/// class B {
+///   B(A a);
+/// }
+///
+/// // During dependency graph resolution:
+/// throw CircularDependencyException(
+///   'Circular dependency detected while resolving services',
+///   cycle: TypeDependencyCycle([A, B, A]),
+/// );
+/// ```
+///
+///
+/// ### Typical Scenarios
+///
+/// - Interceptor or handler chains with circular `@RunBefore` / `@RunAfter` rules.
+/// - Object graph creation in IoC containers or module initializers.
+/// - Misconfigured plugin or module registration that references itself
+///   directly or indirectly.
+///
+///
+/// ### Debugging Tips
+///
+/// - Inspect the [cycle] to identify the exact dependency path involved.
+/// - Review stack traces for the last successfully resolved component.
+/// - Check for circular annotation relationships in `@RunBefore` / `@RunAfter`.
+/// - Use dependency graph visualizations or diagnostic logs to locate cycles.
+///
+///
+/// ### Design Notes
+///
+/// - Extends [RuntimeException], representing an unrecoverable framework-level
+///   configuration or initialization error.
+/// - Stores the detected dependency cycle as structured data rather than relying
+///   solely on error messages.
+/// - Uses [NoOpDependencyCycle] when cycle details are unavailable.
+/// - Should not be caught in user-space unless implementing custom dependency
+///   resolution, interceptor ordering, or plugin registration logic.
+/// - Typically thrown by dependency resolvers or interceptor ordering engines
+///   during application startup.
+///
+///
+/// ### See Also
+/// - [DependencyCycle] – Represents a detected circular dependency.
+/// - [NoOpDependencyCycle] – Sentinel cycle implementation.
+/// - [RuntimeException] – Base type for framework runtime errors.
+///
+/// {@endtemplate}
+class CircularDependencyException extends RuntimeException {
+  /// The detected circular dependency path.
+  ///
+  /// If cycle information is unavailable, this will be a
+  /// [NoOpDependencyCycle].
+  final DependencyCycle cycle;
+
+  /// {@macro circular_dependency_exception}
+  CircularDependencyException(
+    super.message, {
+    super.cause,
+    super.stackTrace,
+    DependencyCycle? cycle,
+  }) : cycle = cycle ?? const NoOpDependencyCycle();
+}
+
+/// {@template dependency_cycle}
+/// Represents a detected **circular dependency** within a dependency graph.
+///
+/// A [DependencyCycle] describes a closed dependency path in which one or more
+/// components ultimately depend on themselves, directly or indirectly.
+///
+/// This interface is used purely for **diagnostic and reporting purposes** and
+/// does not participate in dependency resolution.
+///
+/// Concrete implementations define how the cycle is represented and may
+/// include additional diagnostic metadata such as ordering constraints,
+/// annotations, or resolution context.
+///
+/// Typical implementations may represent:
+///
+/// - **Type or class cycles** (e.g. `A → B → C → A`)
+/// - **Interceptor ordering cycles** involving `@RunBefore` / `@RunAfter`
+/// - **Module, plugin, or pod initialization loops**
+///
+/// Implementations are encouraged to:
+///
+/// - Preserve the **order of dependencies** forming the cycle
+/// - Provide meaningful `toString()` output for logging and diagnostics
+/// - Avoid holding strong references to instantiated objects when possible
+///
+/// ### See Also
+/// - [CircularDependencyException] – Thrown when a circular dependency is detected.
+/// - [NoOpDependencyCycle] – Sentinel implementation when details are unavailable.
+/// {@endtemplate}
+abstract interface class DependencyCycle {
+  /// {@macro dependency_cycle}
+  const DependencyCycle();
+}
+
+/// {@template no_op_dependency_cycle}
+/// A **no-op implementation** of [DependencyCycle].
+///
+/// This type represents the *absence of a concrete or reportable dependency
+/// cycle*, while still satisfying APIs that require a [DependencyCycle]
+/// instance.
+///
+/// It is typically used as:
+///
+/// - A placeholder when a circular dependency is detected but detailed
+///   cycle information is unavailable or intentionally omitted.
+/// - A default or sentinel value in diagnostic pipelines.
+/// - A compatibility adapter when integrating with systems that expect a
+///   [DependencyCycle] but cannot construct a meaningful representation.
+///
+/// This class carries no state and conveys no ordering or dependency
+/// information.
+///
+/// ### Design Notes
+///
+/// - Immutable and allocation-free (`const`).
+/// - Intentionally does **not** override `toString()` to avoid implying
+///   diagnostic detail where none exists.
+/// - Should be used sparingly; prefer concrete [DependencyCycle]
+///   implementations when possible.
+///
+/// ### See Also
+/// - [DependencyCycle] – Base interface for circular dependency representations.
+/// - [CircularDependencyException] – Reports detected dependency cycles.
+/// {@endtemplate}
+final class NoOpDependencyCycle implements DependencyCycle {
+  /// {@macro no_op_dependency_cycle}
+  const NoOpDependencyCycle();
+}
