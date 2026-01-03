@@ -6,6 +6,16 @@ This project follows a simple, human-readable changelog format inspired by
 
 ---
 
+## [1.1.5]
+
+### Changed
+- Updated dependency: `jetleaf_convert`
+
+### Added
+- `CircularDependencyException`, `DependencyCycle` and `NoOpDependencyCycle`
+
+---
+
 ## [1.1.4]
 
 ### Changed
